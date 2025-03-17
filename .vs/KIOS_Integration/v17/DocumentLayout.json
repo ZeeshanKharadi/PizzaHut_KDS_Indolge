@@ -1,0 +1,188 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\KBJS_IndolgeIntegration\\Indolge\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\controllers\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\controllers\\appdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\controllers\\kiosordercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\controllers\\kiosordercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\controllers\\logincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\controllers\\logincontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\controllers\\mposstatuscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\controllers\\mposstatuscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\controllers\\printsalesordercccontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\controllers\\printsalesordercccontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\controllers\\saleordercallcentrecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\controllers\\saleordercallcentrecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\controllers\\usercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\controllers\\usercontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\controllers\\usertypecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\controllers\\usertypecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|c:\\kbjs_indolgeintegration\\indolge\\kios.integration.web\\services\\indolgeorderstokds.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{29CFFCAE-4CC3-45BA-A834-ED543966C65E}|KIOS.Integration.Web\\KIOS.Integration.Web.csproj|solutionrelative:kios.integration.web\\services\\indolgeorderstokds.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MPOSStatusController.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\MPOSStatusController.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Controllers\\MPOSStatusController.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\MPOSStatusController.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Controllers\\MPOSStatusController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-30T08:05:37.544Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "UserTypeController.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\UserTypeController.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Controllers\\UserTypeController.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\UserTypeController.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Controllers\\UserTypeController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-30T08:05:04.87Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "UserController.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\UserController.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Controllers\\UserController.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\UserController.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Controllers\\UserController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-30T08:05:03.44Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "PrintSalesOrderCCController.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\PrintSalesOrderCCController.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Controllers\\PrintSalesOrderCCController.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\PrintSalesOrderCCController.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Controllers\\PrintSalesOrderCCController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-30T08:05:00.056Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "KIOSOrderController.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\KIOSOrderController.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Controllers\\KIOSOrderController.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\KIOSOrderController.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Controllers\\KIOSOrderController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-30T08:04:58.651Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AppDbContext.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\AppDbContext.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Controllers\\AppDbContext.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\AppDbContext.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Controllers\\AppDbContext.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAUAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-30T08:04:57.294Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Program.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Program.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Program.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Program.cs",
+              "ViewState": "AgIAACMAAAAAAAAAAAAIwEAAAAArAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-27T06:48:56.702Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "LoginController.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\LoginController.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Controllers\\LoginController.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\LoginController.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Controllers\\LoginController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-26T15:02:18.14Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "IndolgeOrdersToKDS.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Services\\IndolgeOrdersToKDS.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Services\\IndolgeOrdersToKDS.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Services\\IndolgeOrdersToKDS.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Services\\IndolgeOrdersToKDS.cs",
+              "ViewState": "AgIAAMkAAAAAAAAAAAAawOYAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-26T14:47:22.848Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "SaleOrderCallCentreController.cs",
+              "DocumentMoniker": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\SaleOrderCallCentreController.cs",
+              "RelativeDocumentMoniker": "KIOS.Integration.Web\\Controllers\\SaleOrderCallCentreController.cs",
+              "ToolTip": "C:\\KBJS_IndolgeIntegration\\Indolge\\KIOS.Integration.Web\\Controllers\\SaleOrderCallCentreController.cs",
+              "RelativeToolTip": "KIOS.Integration.Web\\Controllers\\SaleOrderCallCentreController.cs",
+              "ViewState": "AgIAABIAAAAAAAAAAAAAwDMAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2024-12-26T14:44:32.397Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

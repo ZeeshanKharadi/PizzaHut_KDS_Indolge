@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+This file is used by the publish/package process of your Web project. You can customize the behavior of this process
+by editing this MSBuild file. In order to learn more about this please visit https://go.microsoft.com/fwlink/?LinkID=208121. 
+-->
+<Project>
+  <PropertyGroup>
+    <_PublishTargetUrl>C:\KDS_Indoge</_PublishTargetUrl>
+    <History>True|2025-02-18T10:47:04.9310015Z||;True|2024-12-27T11:50:35.2448110+05:00||;False|2024-12-27T11:50:22.0584589+05:00||;True|2024-12-26T19:37:25.1211862+05:00||;False|2024-12-26T19:37:11.7595842+05:00||;True|2024-12-26T19:33:39.7386101+05:00||;False|2024-12-26T19:33:28.5018657+05:00||;True|2024-12-26T19:31:46.0168098+05:00||;False|2024-12-26T19:31:31.9519006+05:00||;True|2024-12-26T19:28:45.7449221+05:00||;False|2024-12-26T19:28:35.0442765+05:00||;True|2024-12-26T19:08:40.2415050+05:00||;False|2024-12-26T19:08:28.7152722+05:00||;True|2024-12-26T19:06:17.7115309+05:00||;False|2024-12-26T19:06:02.9808444+05:00||;True|2024-12-26T19:03:55.2008076+05:00||;False|2024-12-26T19:03:18.2444618+05:00||;True|2024-12-26T18:57:12.2846401+05:00||;False|2024-12-26T18:56:56.0840231+05:00||;True|2024-12-26T17:57:51.5200325+05:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+</Project>

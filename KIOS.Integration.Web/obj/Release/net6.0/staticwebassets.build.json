@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "eDtLHvSCSPpjU5JnSOLKUs6HH++zo+Q9DZ9QCA7KBWc=",
+  "Source": "KIOS.Integration.Web",
+  "BasePath": "_content/KIOS.Integration.Web",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}

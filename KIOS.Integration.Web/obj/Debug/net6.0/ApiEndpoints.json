@@ -1,0 +1,85 @@
+[
+  {
+    "ContainingType": "KIOS.Integration.Web.Controllers.SaleOrderCallCentreController",
+    "Method": "CreateIndolgeOrders",
+    "RelativePath": "api/SaleOrderCallCentre/CreateKDSOrder",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "KIOS.Integration.Web.Model.OrderHeader",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "KIOS.Integration.Web.Model.ResponseModelWithClass",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "KIOS.Integration.Web.Controllers.SaleOrderCallCentreController",
+    "Method": "Delete",
+    "RelativePath": "api/SaleOrderCallCentre/DeleteKDSOrder",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "OrderId",
+        "Type": "System.String",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "KIOS.Integration.Web.Model.ResponseModelWithClass",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "KIOS.Integration.Web.Controllers.SaleOrderCallCentreController",
+    "Method": "UpdateIndolgeOrders",
+    "RelativePath": "api/SaleOrderCallCentre/UpdateKDSOrdersl",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "OrderId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "request",
+        "Type": "System.Collections.Generic.List\u00601[[KIOS.Integration.Web.Model.Orders, KIOS.Integration.Web, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "KIOS.Integration.Web.Model.ResponseModelWithClass",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  }
+]

@@ -1,0 +1,16 @@
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\bin\Release\net6.0\KIOS.Integration.Application.deps.json
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\bin\Release\net6.0\KIOS.Integration.Application.dll
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\bin\Release\net6.0\KIOS.Integration.Application.pdb
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\bin\Release\net6.0\POS_IntegrationCommonDTO.dll
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\bin\Release\net6.0\POS_IntegrationCommonInfrastructure.dll
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\bin\Release\net6.0\POS_Integration_CommonCore.dll
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\KIOS.Integration.Application.csproj.AssemblyReference.cache
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\KIOS.Integration.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\KIOS.Integration.Application.AssemblyInfoInputs.cache
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\KIOS.Integration.Application.AssemblyInfo.cs
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\KIOS.Integration.Application.csproj.CoreCompileInputs.cache
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\KIOS.Int.B3BA85D4.Up2Date
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\KIOS.Integration.Application.dll
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\refint\KIOS.Integration.Application.dll
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\KIOS.Integration.Application.pdb
+C:\KBJS_IndolgeIntegration\Indolge\KIOS.Integration.Application\obj\Release\net6.0\ref\KIOS.Integration.Application.dll
