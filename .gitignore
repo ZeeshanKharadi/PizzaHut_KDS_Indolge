@@ -18,3 +18,5 @@
 *.props
 *.txt
 *.exe
+/.vs/KIOS_Integration/DesignTimeBuild/.dtbcache.v2
+/.vs/KIOS_Integration/v17/.suo
