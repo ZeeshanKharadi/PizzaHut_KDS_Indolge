@@ -5,6 +5,7 @@
         public string thirdPartyOrderId { get; set; }
         public string storeId { get; set; }
         public string? comment { get; set; }
+        public string? orderType { get; set; }
         public List<Orders> salesLines { get; set; }
         public OrderHeader()
         {

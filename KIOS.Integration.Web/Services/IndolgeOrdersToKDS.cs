@@ -86,9 +86,12 @@ namespace KIOS.Integration.Web.Services
             string OrderStatus = "Preparation";
             string OrderState = "Preparing";
             string OrderStatusId = "1";
-            string OrderSource = "Indolge Orders";
-            string OrderTypeId = "03";
-            string OrderType = "DELIVERY";
+            string OrderSource = "KDS Orders";
+
+           
+            //string OrderTypeId = "03";
+            string OrderType = orders.orderType ?? "DELIVERY";
+            string OrderTypeId = GetOrderTypeIdFromOrderType(_connectionString, OrderType);
             int LineNum = 0;
             string transactionId = "0";
             int transactiontype = 2;
@@ -148,7 +151,6 @@ namespace KIOS.Integration.Web.Services
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderStatus", OrderStatus);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderStatusId", OrderStatusId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@Qty", row.quantity);
-
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderState", OrderState);
                     InsertIntoLineCmd.Parameters.AddWithValue("@PosId", row.posId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderTypeId", OrderTypeId);
@@ -176,8 +178,8 @@ namespace KIOS.Integration.Web.Services
             try
             {
                 cs = Iconfig.GetConnectionString("CSKDS");
-                bool IsOrderIdYes = this.CheckOrderIdIfExist(cs, OrderId);
-                if (IsOrderIdYes == true)
+                bool IsOrderExist = this.CheckOrderIdIfExist(cs, OrderId);
+                if (IsOrderExist == true)
                 {
                     // check third pary order id exist
                     string OrderStatusId = this.CheckOrderStatus(cs, OrderId);
@@ -270,9 +272,11 @@ namespace KIOS.Integration.Web.Services
             string OrderStatus = "Preparation";
             string OrderState = "Preparing";
             string OrderStatusId = "1";
-            string OrderSource = "Indolge Orders";
-            string OrderTypeId = "03";
-            string OrderType = "DELIVERY";
+            string OrderSource = "KDS Orders";
+            //string OrderTypeId = "03";
+            //string OrderType = orders.orderType ?? "DELIVERY";
+            string OrderType = GetOrderTypeFromOrderId(_connectionString, OrderId);
+            string OrderTypeId = GetOrderTypeIdFromOrderType(_connectionString, OrderType);
             int LineNum = 0;
             string transactionId = "0";
             int transactiontype = 2;
@@ -464,6 +468,47 @@ namespace KIOS.Integration.Web.Services
             {
 
                 throw;
+            }
+        }
+
+        private string GetOrderTypeIdFromOrderType(string _connectionString, string OrderType)
+        {
+            // repetitive data :/
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                string OrderTypeId = "";
+                DataRow dr;
+                string Get_OrderId = "select OrderTypeId from OrderTypes where Ordertype = '" + OrderType + "'";
+                SqlDataAdapter _sqldataadapter = new SqlDataAdapter(Get_OrderId, con);
+                _sqldataadapter.SelectCommand.CommandType = System.Data.CommandType.Text;
+                DataTable datatabe = new DataTable();
+                _sqldataadapter.Fill(datatabe);
+                if (datatabe.Rows.Count > 0)
+                {
+                    dr = datatabe.Rows[0];
+                    OrderTypeId = dr["OrderTypeId"].ToString();
+                }
+                return OrderTypeId;
+            }
+        }
+        private string GetOrderTypeFromOrderId(string _connectionString, string OrderId)
+        {
+            // repetitive data :/
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                string OrderType = "";
+                DataRow dr;
+                string Get_OrderType = "select top 1 OrderType from Orders where Orderid = '" + OrderId + "'";
+                SqlDataAdapter _sqldataadapter = new SqlDataAdapter(Get_OrderType, con);
+                _sqldataadapter.SelectCommand.CommandType = System.Data.CommandType.Text;
+                DataTable datatabe = new DataTable();
+                _sqldataadapter.Fill(datatabe);
+                if (datatabe.Rows.Count > 0)
+                {
+                    dr = datatabe.Rows[0];
+                    OrderType = dr["OrderType"].ToString();
+                }
+                return OrderType;
             }
         }
     }
