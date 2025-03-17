@@ -24,7 +24,7 @@ namespace KIOS.Integration.Web.Services
                 cs = Iconfig.GetConnectionString("CSKDS");
 
                 // check third pary order id exist
-                bool checkRowHeader = this.IsCheckThordtPartyOrderId(cs, _request.ThirdPartyOrderId);
+                bool checkRowHeader = this.IsCheckThordtPartyOrderId(cs, _request.thirdPartyOrderId);
                 if (checkRowHeader == true) // if ThirdParty OrderId Exist == true
                 {
                     res.Message = "Third Party OrderId Already Exist";
@@ -92,11 +92,11 @@ namespace KIOS.Integration.Web.Services
             int LineNum = 0;
             string transactionId = "0";
             int transactiontype = 2;
-            List<Orders> orderlines = orders.OrderLines.ToList();
+            List<Orders> salesLines = orders.salesLines.ToList();
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
                 int affectedRow = 0;
-                foreach (var row in orderlines)
+                foreach (var row in salesLines)
                 {
                     LineNum++;
                     string InsertIntoOrders =
@@ -126,7 +126,6 @@ namespace KIOS.Integration.Web.Services
                                 @ItemId,
                                 @ItemName,
                                 @Qty,
-                                @Desc,
                                 @StoreID,
                                 @OrderStatus,
                                 @OrderStatusId,
@@ -140,19 +139,18 @@ namespace KIOS.Integration.Web.Services
                                 @ItemCategory,
                                 @TransactionType)";
                     SqlCommand InsertIntoLineCmd = new SqlCommand(InsertIntoOrders, con);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@OrderId", orders.ThirdPartyOrderId);
-                    InsertIntoLineCmd.Parameters.AddWithValue("OrderNo", orders.ThirdPartyOrderId);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@ItemId", row.ItemId);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@ItemName", row.ItemName);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@OrderId", orders.thirdPartyOrderId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("OrderNo", orders.thirdPartyOrderId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@ItemId", row.itemId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@ItemName", row.itemName);
                     InsertIntoLineCmd.Parameters.AddWithValue("@CreatedOn", CreatedOn);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@StoreId", row.StoreId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@StoreId", orders.storeId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderStatus", OrderStatus);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderStatusId", OrderStatusId);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@Qty", row.Quantity);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@Desc", row.Description);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@Qty", row.quantity);
 
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderState", OrderState);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@PosId", row.PosId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@PosId", row.posId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderTypeId", OrderTypeId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderType", OrderType);
                     InsertIntoLineCmd.Parameters.AddWithValue("@LineNum", LineNum);
@@ -165,7 +163,7 @@ namespace KIOS.Integration.Web.Services
                     affectedRow = InsertIntoLineCmd.ExecuteNonQuery();
                     con.Close();
 
-                    DeductQtyFromBoh(row.ItemId, row.Quantity, _connectionString);
+                    DeductQtyFromBoh(row.itemId, row.quantity, _connectionString);
                 }
                 return affectedRow;
             }
@@ -278,11 +276,12 @@ namespace KIOS.Integration.Web.Services
             int LineNum = 0;
             string transactionId = "0";
             int transactiontype = 2;
-            List<Orders> orderlines = orders.ToList();
+            List<Orders> salesLines = orders.ToList();
+            
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
                 int affectedRow = 0;
-                foreach (var row in orderlines)
+                foreach (var row in salesLines)
                 {
                     LineNum++;
                     string InsertIntoOrders =
@@ -312,8 +311,6 @@ namespace KIOS.Integration.Web.Services
                                 @ItemId,
                                 @ItemName,
                                 @Qty,
-                                @Desc,
-                                @StoreID,
                                 @OrderStatus,
                                 @OrderStatusId,
                                 @OrderState,
@@ -328,17 +325,15 @@ namespace KIOS.Integration.Web.Services
                     SqlCommand InsertIntoLineCmd = new SqlCommand(InsertIntoOrders, con);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderId", OrderId);
                     InsertIntoLineCmd.Parameters.AddWithValue("OrderNo", OrderId);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@ItemId", row.ItemId);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@ItemName", row.ItemName);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@ItemId", row.itemId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@ItemName", row.itemName);
                     InsertIntoLineCmd.Parameters.AddWithValue("@CreatedOn", CreatedOn);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@StoreId", row.StoreId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderStatus", OrderStatus);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderStatusId", OrderStatusId);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@Qty", row.Quantity);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@Desc", row.Description);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@Qty", row.quantity);
 
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderState", OrderState);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@PosId", row.PosId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@PosId", row.posId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderTypeId", OrderTypeId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderType", OrderType);
                     InsertIntoLineCmd.Parameters.AddWithValue("@LineNum", LineNum);
@@ -346,8 +341,6 @@ namespace KIOS.Integration.Web.Services
                     InsertIntoLineCmd.Parameters.AddWithValue("@TransactionId", transactionId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@ItemCategory", "");
                     InsertIntoLineCmd.Parameters.AddWithValue("@TransactionType", transactiontype);
-
-
 
                     con.Open();
 

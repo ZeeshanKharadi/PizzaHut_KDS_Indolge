@@ -7,11 +7,11 @@ namespace KIOS.Integration.Web.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SaleOrderCallCentreController : ControllerBase
+    public class orderKDSController : ControllerBase
     {
         private readonly IConfiguration Iconfig;
         private string cs;
-        public SaleOrderCallCentreController(IConfiguration iconfig)
+        public orderKDSController(IConfiguration iconfig)
         {
             Iconfig = iconfig;
         }
@@ -26,10 +26,7 @@ namespace KIOS.Integration.Web.Controllers
 
             IndolgeOrdersToKDS obj = new IndolgeOrdersToKDS(Iconfig);
             ResponseModelWithClass response = await obj.InsertIndolgeOrdersToKDS(request);
-            //if ( res.HttpStatusCode == (int)HttpStatusCode.OK && res.MessageType == (int)MessageType.Success )
-            //{
-
-            //}
+           
             return response;
         }
 

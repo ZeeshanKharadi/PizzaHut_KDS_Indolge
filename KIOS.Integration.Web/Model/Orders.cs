@@ -2,11 +2,11 @@
 {
     public class Orders
     {
-        public string ItemId { get; set; }
-        public string ItemName { get; set; }
-        public decimal Quantity { get; set; }
-        public string Description { get; set; }
-        public string StoreId { get; set; }
-        public string PosId { get; set; }
+        public string itemId { get; set; }
+        public string itemName { get; set; }
+        public decimal quantity { get; set; }
+        public string size { get; set; }
+        public string? lineComment { get; set; }
+        public string posId { get; set; }
     }
 }

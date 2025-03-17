@@ -2,11 +2,13 @@
 {
     public class OrderHeader
     {
-        public string ThirdPartyOrderId { get; set; }
-        public List<Orders> OrderLines { get; set; }
+        public string thirdPartyOrderId { get; set; }
+        public string storeId { get; set; }
+        public string? comment { get; set; }
+        public List<Orders> salesLines { get; set; }
         public OrderHeader()
         {
-            OrderLines = new List<Orders>();
+            salesLines = new List<Orders>();
         }
     }
 }
