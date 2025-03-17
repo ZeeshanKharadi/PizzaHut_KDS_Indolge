@@ -1,0 +1,20 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+*.vsidx
+/KIOS.Integration.Application/obj/Debug/net6.0/KIOS.Integration.Application.AssemblyInfoInputs.cache
+/KIOS.Integration.Application/obj/Debug/net6.0/KIOS.Integration.Application.assets.cache
+/KIOS.Integration.Application/obj/Debug/net6.0/KIOS.Integration.Application.csproj.AssemblyReference.cache
+/KIOS.Integration.Web/obj/Debug/net6.0/KIOS.Integration.Web.csproj.CoreCompileInputs.cache
+/KIOS.Integration.Web/obj/Debug/net6.0/KIOS.Integration.Web.AssemblyInfoInputs.cache
+/KIOS.Integration.Web/obj/Debug/net6.0/KIOS.Integration.Web.csproj.AssemblyReference.cache
+/KIOS.Integration.Web/obj/project.nuget.cache
+/KIOS.Integration.Application/obj/Debug/net6.0/refint/KIOS.Integration.Application.dll
+*.cache
+*.json
+*.dll
+*.pdb
+*.props
+*.txt
+*.exe
