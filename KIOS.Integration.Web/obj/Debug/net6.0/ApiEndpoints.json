@@ -1,8 +1,8 @@
 [
   {
-    "ContainingType": "KIOS.Integration.Web.Controllers.SaleOrderCallCentreController",
+    "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
     "Method": "CreateIndolgeOrders",
-    "RelativePath": "api/SaleOrderCallCentre/CreateKDSOrder",
+    "RelativePath": "api/orderKDS/CreateKDSOrder",
     "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
@@ -26,9 +26,9 @@
     ]
   },
   {
-    "ContainingType": "KIOS.Integration.Web.Controllers.SaleOrderCallCentreController",
+    "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
     "Method": "Delete",
-    "RelativePath": "api/SaleOrderCallCentre/DeleteKDSOrder",
+    "RelativePath": "api/orderKDS/DeleteKDSOrder",
     "HttpMethod": "DELETE",
     "IsController": true,
     "Order": 0,
@@ -52,9 +52,9 @@
     ]
   },
   {
-    "ContainingType": "KIOS.Integration.Web.Controllers.SaleOrderCallCentreController",
+    "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
     "Method": "UpdateIndolgeOrders",
-    "RelativePath": "api/SaleOrderCallCentre/UpdateKDSOrdersl",
+    "RelativePath": "api/orderKDS/UpdateKDSOrdersl",
     "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,

@@ -31,7 +31,7 @@ namespace KIOS.Integration.Web.Controllers
         }
 
         [HttpPut]
-        [Route("UpdateKDSOrdersl")]
+        [Route("UpdateKDSOrder")]
         public async Task<ResponseModelWithClass> UpdateIndolgeOrders(string OrderId, List<Orders> request)
         {
             ResponseModelWithClass res = new ResponseModelWithClass();

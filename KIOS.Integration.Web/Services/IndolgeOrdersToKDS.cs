@@ -109,7 +109,6 @@ namespace KIOS.Integration.Web.Services
                                 ItemId,
                                 ItemName,
                                 Quantity,
-                                Description,
                                 StoreID,
                                 OrderStatus,
                                 OrderStatusId,
@@ -121,7 +120,9 @@ namespace KIOS.Integration.Web.Services
                                 OrderSource,
                                 TransactionID,
                                 ItemCategory,
-                                TransactionType)
+                                TransactionType,
+                                StationId,
+                                StationName)
                                 VALUES
                                 (@OrderId,
                                 @OrderNo,
@@ -140,7 +141,9 @@ namespace KIOS.Integration.Web.Services
                                 @OrderSource,
                                 @TransactionId,
                                 @ItemCategory,
-                                @TransactionType)";
+                                @TransactionType,
+                                @StationId,
+                                @StationName)";
                     SqlCommand InsertIntoLineCmd = new SqlCommand(InsertIntoOrders, con);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderId", orders.thirdPartyOrderId);
                     InsertIntoLineCmd.Parameters.AddWithValue("OrderNo", orders.thirdPartyOrderId);
@@ -160,6 +163,8 @@ namespace KIOS.Integration.Web.Services
                     InsertIntoLineCmd.Parameters.AddWithValue("@TransactionId", transactionId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@ItemCategory", "");
                     InsertIntoLineCmd.Parameters.AddWithValue("@TransactionType", transactiontype);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@StationId", row.stationId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@StationName", row.stationName);
 
                     con.Open();
                     affectedRow = InsertIntoLineCmd.ExecuteNonQuery();
@@ -295,8 +300,6 @@ namespace KIOS.Integration.Web.Services
                                 ItemId,
                                 ItemName,
                                 Quantity,
-                                Description,
-                                StoreID,
                                 OrderStatus,
                                 OrderStatusId,
                                 OrderState,
