@@ -54,7 +54,7 @@
   {
     "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
     "Method": "UpdateIndolgeOrders",
-    "RelativePath": "api/orderKDS/UpdateKDSOrdersl",
+    "RelativePath": "api/orderKDS/UpdateKDSOrder",
     "HttpMethod": "PUT",
     "IsController": true,
     "Order": 0,

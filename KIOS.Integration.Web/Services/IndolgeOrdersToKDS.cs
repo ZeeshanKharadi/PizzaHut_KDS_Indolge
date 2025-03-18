@@ -88,7 +88,7 @@ namespace KIOS.Integration.Web.Services
             string OrderStatusId = "1";
             string OrderSource = "KDS Orders";
 
-           
+
             //string OrderTypeId = "03";
             string OrderType = orders.orderType ?? "DELIVERY";
             string OrderTypeId = GetOrderTypeIdFromOrderType(_connectionString, OrderType);
@@ -122,7 +122,8 @@ namespace KIOS.Integration.Web.Services
                                 ItemCategory,
                                 TransactionType,
                                 StationId,
-                                StationName)
+                                StationName,
+                                Size)
                                 VALUES
                                 (@OrderId,
                                 @OrderNo,
@@ -143,7 +144,8 @@ namespace KIOS.Integration.Web.Services
                                 @ItemCategory,
                                 @TransactionType,
                                 @StationId,
-                                @StationName)";
+                                @StationName,
+                                @Size)";
                     SqlCommand InsertIntoLineCmd = new SqlCommand(InsertIntoOrders, con);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderId", orders.thirdPartyOrderId);
                     InsertIntoLineCmd.Parameters.AddWithValue("OrderNo", orders.thirdPartyOrderId);
@@ -163,8 +165,9 @@ namespace KIOS.Integration.Web.Services
                     InsertIntoLineCmd.Parameters.AddWithValue("@TransactionId", transactionId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@ItemCategory", "");
                     InsertIntoLineCmd.Parameters.AddWithValue("@TransactionType", transactiontype);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@StationId", row.stationId);
-                    InsertIntoLineCmd.Parameters.AddWithValue("@StationName", row.stationName);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@StationId", row.stationId?? "1");
+                    InsertIntoLineCmd.Parameters.AddWithValue("@StationName", row.stationName?? "");
+                    InsertIntoLineCmd.Parameters.AddWithValue("@Size", row.stationName?? "");
 
                     con.Open();
                     affectedRow = InsertIntoLineCmd.ExecuteNonQuery();
@@ -286,7 +289,7 @@ namespace KIOS.Integration.Web.Services
             string transactionId = "0";
             int transactiontype = 2;
             List<Orders> salesLines = orders.ToList();
-            
+
             using (SqlConnection con = new SqlConnection(_connectionString))
             {
                 int affectedRow = 0;
@@ -310,7 +313,10 @@ namespace KIOS.Integration.Web.Services
                                 OrderSource,
                                 TransactionID,
                                 ItemCategory,
-                                TransactionType)
+                                TransactionType,
+                                StationId,
+                                StationName,
+                                Size)
                                 VALUES
                                 (@OrderId,
                                 @OrderNo,
@@ -328,7 +334,10 @@ namespace KIOS.Integration.Web.Services
                                 @OrderSource,
                                 @TransactionId,
                                 @ItemCategory,
-                                @TransactionType)";
+                                @TransactionType
+                                @StationId,
+                                @StationName,
+                                @Size)";
                     SqlCommand InsertIntoLineCmd = new SqlCommand(InsertIntoOrders, con);
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderId", OrderId);
                     InsertIntoLineCmd.Parameters.AddWithValue("OrderNo", OrderId);
@@ -347,7 +356,10 @@ namespace KIOS.Integration.Web.Services
                     InsertIntoLineCmd.Parameters.AddWithValue("@OrderSource", OrderSource);
                     InsertIntoLineCmd.Parameters.AddWithValue("@TransactionId", transactionId);
                     InsertIntoLineCmd.Parameters.AddWithValue("@ItemCategory", "");
-                    InsertIntoLineCmd.Parameters.AddWithValue("@TransactionType", transactiontype);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@TransactionType", transactiontype); 
+                    InsertIntoLineCmd.Parameters.AddWithValue("@StationId", row.stationId ?? "1");
+                    InsertIntoLineCmd.Parameters.AddWithValue("@StationName", row.stationName ?? "");
+                    InsertIntoLineCmd.Parameters.AddWithValue("@Size", row.stationName ?? "");
 
                     con.Open();
 
@@ -380,7 +392,7 @@ namespace KIOS.Integration.Web.Services
             }
         }
 
-        public async Task<ResponseModelWithClass> DeleteOrderFromKDS( string cs , string orderid)
+        public async Task<ResponseModelWithClass> DeleteOrderFromKDS(string cs, string orderid)
         {
             ResponseModelWithClass res = new ResponseModelWithClass();
 
@@ -429,14 +441,14 @@ namespace KIOS.Integration.Web.Services
             return res;
         }
 
-        public void DeductQtyFromBoh(string ItemId,decimal Qty,string cs)
+        public void DeductQtyFromBoh(string ItemId, decimal Qty, string cs)
         {
-            decimal Onhand       = 0;
+            decimal Onhand = 0;
             decimal RemainingQty = 0;
             try
             {
                 SqlConnection con = new SqlConnection(cs);
-                string query = "select * from BOM where ItemId = '"+ItemId+"'";
+                string query = "select * from BOM where ItemId = '" + ItemId + "'";
                 SqlDataAdapter _sda = new SqlDataAdapter(query, con);
                 DataTable _dt = new DataTable();
                 _sda.Fill(_dt);
@@ -453,12 +465,12 @@ namespace KIOS.Integration.Web.Services
                         if (_onhanddt.Rows.Count > 0)
                         {
                             DataRow GetOnhandRow = _onhanddt.Rows[0];
-                            Onhand               = Convert.ToDecimal(GetOnhandRow["OnHandQuantity"].ToString());
-                            RemainingQty         = (Onhand - Qty);
+                            Onhand = Convert.ToDecimal(GetOnhandRow["OnHandQuantity"].ToString());
+                            RemainingQty = (Onhand - Qty);
 
-                            string UpdateItemOnhand = "update item set OnHandQuantity = '" + RemainingQty + 
+                            string UpdateItemOnhand = "update item set OnHandQuantity = '" + RemainingQty +
                                                        "' where ItemId='" + rows["FryingItem"].ToString() + "'";
-                            SqlCommand UpdCon = new SqlCommand(UpdateItemOnhand,con);
+                            SqlCommand UpdCon = new SqlCommand(UpdateItemOnhand, con);
 
                             con.Open();
                             UpdCon.ExecuteNonQuery();
