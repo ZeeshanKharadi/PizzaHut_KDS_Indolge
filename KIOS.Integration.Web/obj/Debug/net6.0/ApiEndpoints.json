@@ -1,16 +1,16 @@
 [
   {
     "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
-    "Method": "CreateIndolgeOrders",
-    "RelativePath": "api/orderKDS/CreateKDSOrder",
-    "HttpMethod": "POST",
+    "Method": "Delete",
+    "RelativePath": "api/orderKDS/cancelKDSOrder",
+    "HttpMethod": "DELETE",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "request",
-        "Type": "KIOS.Integration.Web.Model.OrderHeader",
-        "IsRequired": true
+        "Name": "OrderId",
+        "Type": "System.String",
+        "IsRequired": false
       }
     ],
     "ReturnTypes": [
@@ -27,16 +27,16 @@
   },
   {
     "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
-    "Method": "Delete",
-    "RelativePath": "api/orderKDS/DeleteKDSOrder",
-    "HttpMethod": "DELETE",
+    "Method": "CreateIndolgeOrders",
+    "RelativePath": "api/orderKDS/CreateKDSOrder",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
-        "Name": "OrderId",
-        "Type": "System.String",
-        "IsRequired": false
+        "Name": "request",
+        "Type": "KIOS.Integration.Web.Model.OrderHeader",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": [
@@ -73,6 +73,58 @@
     "ReturnTypes": [
       {
         "Type": "KIOS.Integration.Web.Model.ResponseModelWithClass",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "KIOS.Integration.Web.Controllers.OrderPOS",
+    "Method": "CompleteOrderCHZ",
+    "RelativePath": "api/OrderPOS/complete-order",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "KIOS.Integration.Application.Commands.CreateRetailTransactionCommand",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "POS_Integration_CommonCore.Response.ResponseModelWithClass\u00601[[KIOS.Integration.Application.Commands.CustomCreateOrderResponse, KIOS.Integration.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "KIOS.Integration.Web.Controllers.OrderPOS",
+    "Method": "ReturnPOSOrder",
+    "RelativePath": "api/OrderPOS/return-order",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "KIOS.Integration.Application.Commands.ReturnPOSOrderCommand",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "POS_Integration_CommonCore.Response.ResponseModelWithClass\u00601[[KIOS.Integration.Application.Commands.CustomCreateOrderResponse, KIOS.Integration.Application, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null]]",
         "MediaTypes": [
           "text/plain",
           "application/json",

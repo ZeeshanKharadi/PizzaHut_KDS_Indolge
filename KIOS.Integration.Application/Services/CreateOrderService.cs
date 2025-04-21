@@ -1,8 +1,10 @@
 ﻿
+using Azure;
 using KIOS.Integration.Application.Commands;
 using KIOS.Integration.Application.Queries;
 using KIOS.Integration.Application.Services.Abstraction;
 using MediatR;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -22,8 +24,10 @@ namespace KIOS.Integration.Application.Services
 {
     public class CreateOrderService : ICreateOrderService
     {
+        private string _connectionString_CHZ_MIDDLEWARE;
         private string _connectionString_KFC;
         private InlineQueryResponse lastRecordResponse;
+        private string _connectionString_RSSU;
         private readonly IConfiguration _configuration;
         private string _terminalId;
         private string _receiptId;
@@ -46,24 +50,28 @@ namespace KIOS.Integration.Application.Services
         private string _srbInvoiceNumber = string.Empty;
         private decimal _taxValue;
         private readonly ISender _mediator;
+        private string _terminalIdOverride;
 
         public CreateOrderService(IConfiguration configuration, ISender mediator)
         {
             _configuration = configuration;
+            _connectionString_CHZ_MIDDLEWARE = configuration.GetConnectionString("AppDbConnection");
             _connectionString_KFC = configuration.GetConnectionString("RSSUConnection");
+            _connectionString_RSSU = configuration.GetConnectionString("RSSUConnection");
             _terminalId = _configuration.GetSection("Keys:TerminalId").Value;
             _terminalId = _configuration.GetSection("Keys:TerminalId").Value;
             _isTaxImplemented = _configuration.GetSection("Keys:TaxApplied").Value;
             _mediator = mediator;
+            _terminalIdOverride = _configuration.GetSection("Keys:_terminalIdOverride").Value;
         }
 
-        public async Task<ResponseModelWithClass<CreateSalesOrderResponse>> CreateOrderKFC(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request)
+        public async Task<ResponseModelWithClass<CustomCreateOrderResponse>> CreateOrderCHZ(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request)
         {
-            ResponseModelWithClass<CreateSalesOrderResponse> response = new ResponseModelWithClass<CreateSalesOrderResponse>();
+            ResponseModelWithClass<CustomCreateOrderResponse> response = new ResponseModelWithClass<CustomCreateOrderResponse>();
             //LastRecordResponseFromRetailTransTableResponse lastRecordResponse = new LastRecordResponseFromRetailTransTableResponse();
             response.HttpStatusCode = (int)HttpStatusCode.Accepted;
             response.MessageType = (int)MessageType.Info;
-            CreateSalesOrderResponse responseModel = new CreateSalesOrderResponse();
+            CustomCreateOrderResponse responseModel = new CustomCreateOrderResponse();
             Task<FBRResponse> fBRResponse = null;
             InlineQueryResponse inlineQueryResponseTax = new InlineQueryResponse();
             int affectedRows = 0;
@@ -88,144 +96,221 @@ namespace KIOS.Integration.Application.Services
             int noOfPaymentLine = 0;
             decimal testValue;
             long? miliseconds;
+            int TaxExemptionBit = 0;
 
-            //fBRResponse = FBR_TestURL(request);
+            if (_terminalIdOverride == "1")
+            {
+                if (request.Terminal != null)
+                {
+                    _terminalId = request.Terminal;
+                }
+            }
 
-            // InsertCrtSALESTRANSACTION(request);
-            //FBR(request);
 
             string storeProcedureName = "usp_create_axRetailTransactionTable";
 
             try
             {
+                // Drive Thru || Server App Order
                 if (request.Payment_method == PaymentMethod.Cash)
                 {
+                    string thirdPartorderid = request.ThirdPartyOrderId;
+                    string orderStatus = request.orderStatus;
+                    if (!CreatedRecord(thirdPartorderid, orderStatus))
+                    {
+                        //RetailTransaction retailTransaction = await _mediator.Send(request);
+                        //responseModel.ReceiptId = retailTransaction.TransactionId;
 
-                    RetailTransaction retailTransaction = await _mediator.Send(request);
-                    //responseModel.RecipteId = retailTransaction.TransactionId;
+                        await SaveRetailTransactionAsync(request, responseModel);
 
-                    response.Result = responseModel;
-                    response.HttpStatusCode = (int)HttpStatusCode.OK;
-                    response.MessageType = (int)MessageType.Success;
-                    response.Message = "Cash Middleware Order created successfully.";
+                        response.Result = responseModel;
+                        response.HttpStatusCode = (int)HttpStatusCode.OK;
+                        response.MessageType = (int)MessageType.Success;
+                        response.Message = "Order created successfully.";
 
-                    return response;
+                        return response;
+                    }
+                    else
+                    {
+                        response.Result = null;
+                        response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                        response.MessageType = (int)MessageType.Error;
+                        response.Message = "Order Already Created";
+                    }
 
                 }
 
                 else if (request.Payment_method == PaymentMethod.CreditCard)
                 {
-                    if (request != null && request.salesLines.Count > 0)
-                    {
-                        double totalseconds = TimeSpan.Parse(now.ToString("HH:mm:ss")).TotalSeconds;
-                        int transTime = Convert.ToInt32(totalseconds);
+
+                    request.AmountCur = request.GrossAmount;
+                    request.BusinessDate = request.TransDate;
+                    request.BusinessDateCustom = request.TransDate.ToString();
+                    string TaxGroup = GetTaxGroupByThirdPartyOrderId(request.ThirdPartyOrderId);
+                    //string tenderType = null;
+                    string sourcePayMethod = null;
+                    string destinationPayMethod = null;
+
+                    //
+                    //if (TaxGroup == "PRA-GST-16" || TaxGroup == "FBR-GST-15" || (TaxGroup == "KPRA-GST-6" && request.TenderTypeId == "1"))
+                    //{
+                    //    request.Payment_method = PaymentMethod.Cash;
+                    //}
+
+                    //if (request.TenderTypeId == "1")
+                    //{
+                    //    sourcePayMethod = "CASH";
+                    //}
+                    //else if (request.TenderTypeId != "1")
+                    //{
+                    //    sourcePayMethod = "CREDIT";
+                    //}
 
 
-                        if (request != null && request.Store == null || request.Store == "string" || request.Store == string.Empty)
+                    ////This will check whether it should be cash transactin or not 
+                    //if (TaxGroup == "PRA-GST-16" || TaxGroup == "FBR-GST-15" || TaxGroup == "KPRA-GST-6")
+                    //{
+                    //    destinationPayMethod = "CASH";
+                    //}
+                    //else
+                    //{
+                    //    destinationPayMethod = "CREDIT";
+                    //}
+                    //if (sourcePayMethod == destinationPayMethod)
+                    //{
+                        if (request != null && request.salesLines.Count > 0)
                         {
-                            response.Result = responseModel = null;
-                            response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
-                            response.MessageType = (int)MessageType.Warning;
-                            response.Message = " store id not found. ";
+                            double totalseconds = TimeSpan.Parse(now.ToString("HH:mm:ss")).TotalSeconds;
+                            int transTime = Convert.ToInt32(totalseconds);
 
-                            return response;
-                        }
-                        if (_isTaxImplemented == "3" && request.POSFee == 0)
-                        {
-                            response.Result = responseModel = null;
-                            response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
-                            response.MessageType = (int)MessageType.Warning;
-                            response.Message = " POS Fee can not be 0 ";
-                            return response;
-                        }
 
-                        recieptId = IncrementedId(request.Store, false, false);
-
-                        _receiptId = recieptId;
-
-                        transactionId = IncrementedId(request.Store, false, true);
-
-                        _transactionId = transactionId;
-
-                        if (request.Payment_method == PaymentMethod.Cash)
-                        {
-                            suspendedTransactionId = IncrementedId(request.Store, true, false);
-
-                            _suspendedId = suspendedTransactionId;
-
-                            type = 36;
-                            noOfPaymentLine = 0;
-
-                        }
-
-                        if (request.Payment_method == PaymentMethod.CreditCard)
-                        {
-                            //request.PaymentAmount = paymentAmount;
-
-                            type = 2;
-
-                            if (request.salesLines.Count <= 1)
+                            if (request != null && (request.Store == null || request.Store == "string" || request.Store == string.Empty))
                             {
-                                noOfPaymentLine = 1;
+                                response.Result = responseModel = null;
+                                response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
+                                response.MessageType = (int)MessageType.Warning;
+                                response.Message = " store id not found. ";
+
+                                return response;
                             }
-                            else
+                            if (_isTaxImplemented == "3" && request.POSFee == 0)
                             {
-                                noOfPaymentLine = 2;
+                                response.Result = responseModel = null;
+                                response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
+                                response.MessageType = (int)MessageType.Warning;
+                                response.Message = " POS Fee can not be 0 ";
+                                return response;
                             }
-                        }
 
-                        foreach (var noOfItemLines in request.salesLines)
-                        {
-                            numberOfItemLines++;
-                            numberOfItems = numberOfItems + Convert.ToInt32(noOfItemLines.Qty++);
-                        }
+                            recieptId = IncrementedId(request.Store, false, false);
 
-                        if (numberOfItemLines <= 0 && numberOfItems <= 0)
-                        {
-                            response.Result = responseModel = null;
-                            response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
-                            response.MessageType = (int)MessageType.Warning;
-                            response.Message = " numberOfItemLines and numberOfItems cannot be null or 0. ";
+                            _receiptId = recieptId;
 
-                            return response;
-                        }
+                            transactionId = IncrementedId(request.Store, false, true);
 
-                        _staffId = StaffId(_terminalId);
-                        batchId = GetBatchId(_terminalId, request.Store);
-                        _batchId = (long)Convert.ToDecimal(batchId);
-                        inventLocationId = GetInventLocation(request.Store);
-                        lastRecordResponse = getFirstRecFromRetailTransactionTable(request.Company);
-                        _channle = lastRecordResponse.Channel;
-                        inlineQueryResponseTax = getTaxGroupandBusinessDate(request.Store, request.Payment_method);
+                            _transactionId = transactionId;
 
-                        _grossAmountCustom = CalculatePriceWithTax(request.NetAmount, inlineQueryResponseTax.TAXVALUE);
+                            //if (request.Payment_method == PaymentMethod.Cash)
+                            //{
+                            //    suspendedTransactionId = IncrementedId(request.Store, true, false);
+
+                            //    _suspendedId = suspendedTransactionId;
+
+                            //    type = 36;
+                            //    noOfPaymentLine = 0;
+
+                            //}
+
+                            if (request.Payment_method == PaymentMethod.Cash)
+                            {
+                                type = 2;
+
+                                if (request.salesLines.Count <= 1)
+                                {
+                                    noOfPaymentLine = 1;
+                                }
+                                else
+                                {
+                                    noOfPaymentLine = 2;
+                                }
+
+                            }
+
+                            if (request.Payment_method == PaymentMethod.CreditCard)
+                            {
+                                //request.PaymentAmount = paymentAmount;
+
+                                type = 2;
+
+                                if (request.salesLines.Count <= 1)
+                                {
+                                    noOfPaymentLine = 1;
+                                }
+                                else
+                                {
+                                    noOfPaymentLine = 2;
+                                }
+                            }
+
+                            foreach (var noOfItemLines in request.salesLines)
+                            {
+                                numberOfItemLines++;
+                                numberOfItems = numberOfItems + Convert.ToInt32(noOfItemLines.Qty++);
+                            }
+
+                            if (numberOfItemLines <= 0 && numberOfItems <= 0)
+                            {
+                                response.Result = responseModel = null;
+                                response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
+                                response.MessageType = (int)MessageType.Warning;
+                                response.Message = " numberOfItemLines and numberOfItems cannot be null or 0. ";
+
+                                return response;
+                            }
+
+                            //_staffId = StaffId(_terminalId);
+                            _staffId = "000007";
+                            batchId = GetBatchId(_terminalId, request.Store);
+                            _batchId = (long)Convert.ToDecimal(batchId);
+                            inventLocationId = GetInventLocation(request.Store);
+                            lastRecordResponse = getFirstRecFromRetailTransactionTable(request.Company);
+                            _channle = lastRecordResponse.Channel;
+                            inlineQueryResponseTax = getTaxGroupandBusinessDate(request.Store, request.Payment_method, request.TaxGroup);
+
+                            _grossAmountCustom = CalculatePriceWithTax(request.NetAmount, inlineQueryResponseTax.TAXVALUE);
+
+                            TaxExemptionBit = GetTaxExemptionBit(request.Store);
+                            //TaxExemptionBit = 1;
+                            //string description = " ThirdPartyOrder: " + request.ThirdPartyOrderId + " KIOS " + "; Source: " + request.Source + ";";
+                            string description = "PizzHutOrders";
+                            InlineQueryResponse inlineQueryResponseTaxGroupandBusinessDate = getTaxGroupandBusinessDate(request.Store, request.Payment_method, request.TaxGroup);
 
 
-                        string description = " ThirdPartyOrder: " + request.ThirdPartyOrderId + " KIOS " + "; Source: " + request.Source + ";";
-                        InlineQueryResponse inlineQueryResponseTaxGroupandBusinessDate = getTaxGroupandBusinessDate(request.Store, request.Payment_method);
+                            //if (inlineQueryResponseTaxGroupandBusinessDate != null)
+                            //{
+                            //    request.BusinessDateCustom = inlineQueryResponseTaxGroupandBusinessDate.BusinessDate;
+                            //}
+                            StringBuilder query = new StringBuilder();
 
+                            //query.Append("SELECT EMP_NAME, EMP_NAME FROM hr_sm_emply WHERE emp_code = @Code");
+                            query.Append(storeProcedureName);
 
-                        if (inlineQueryResponseTaxGroupandBusinessDate != null)
-                        {
-                            request.BusinessDateCustom = inlineQueryResponseTaxGroupandBusinessDate.BusinessDate;
-                        }
-                        StringBuilder query = new StringBuilder();
-
-                        //query.Append("SELECT EMP_NAME, EMP_NAME FROM hr_sm_emply WHERE emp_code = @Code");
-                        query.Append(storeProcedureName);
-
-                        Dictionary<string, object> parameters = new Dictionary<string, object>
+                            Dictionary<string, object> parameters = new Dictionary<string, object>
                 {
                     { "TERMINAL", _terminalId },
                     { "BATCHID", (long)Convert.ToDecimal(batchId) },
                     { "CHANNEL", lastRecordResponse.Channel },
                     { "CURRENCY", request.Currency },
-                    { "GROSSAMOUNT", Math.Round(request.GrossAmount, 2) * -1 },
-                    { "PaymentAmount", request.GrossAmount },
+                    //{ "GROSSAMOUNT", Math.Round(request.GrossAmount, 2) * -1 },
+                    { "GROSSAMOUNT", request.GrossAmount * -1 },
+                    //{ "PaymentAmount", request.GrossAmount },
+                    { "PaymentAmount", Math.Round(request.GrossAmount, 2)  },
                     //{ "PaymentAmount", 0.00 },
                     { "INVENTLOCATIONID", request.Store },
-                    { "NETAMOUNT", Math.Round(request.NetAmount, 2) * -1 },
-                    { "NETPRICE", Math.Round(request.NetPrice, 2) * -1 },
+                    //{ "NETAMOUNT", Math.Round(request.NetAmount, 2) * -1 },
+                    { "NETAMOUNT", request.NetAmount * -1 },
+                    //{ "NETPRICE", Math.Round(request.NetPrice, 2) * -1 },
+                    { "NETPRICE", request.NetPrice * -1 },
                     { "NUMBEROFITEMLINES", numberOfItemLines },
                     { "NUMBEROFITEMS", numberOfItems },
                     { "NUMBEROFPAYMENTLINES", noOfPaymentLine },
@@ -242,7 +327,8 @@ namespace KIOS.Integration.Application.Services
                     { "DATAAREAID", request.Company },
                     { "DESCRIPTION", description },
                     { "BATCHTERMINALID", _terminalId },
-                    { "BusinessDate", request.BusinessDateCustom },
+                    { "BusinessDate", request.BusinessDateCustom},
+                    //{ "BusinessDate", request.TransDate},
                     //{ "BusinessDate", request.BusinessDate },
                     { "CREATEDONPOSTERMINAL", _terminalId },
                     { "TIMEWHENTOTALPRESSED", "" + seconds },
@@ -253,243 +339,348 @@ namespace KIOS.Integration.Application.Services
                     { "ThirdPartyOrderId", request.ThirdPartyOrderId },
                     { "PickUpMode", request.PickupMode },
                     { "TableNum", request.TableNum },
-                    { "CreatedDateTime", createdDateTime.AddHours(-5) }
+                    { "Comment", request.Comment },
+                    { "CreatedDateTime", createdDateTime.AddHours(-5) },
+                    { "DISCAMOUNT", request.DiscAmount },
+                    { "DISCAMOUNTWITHOUTTAX", request.DiscAmountWithoutTax },
+                    { "ISTAXEXEMPTEDFORPRICEINCLUSIVE", TaxExemptionBit}
                 };
 
-                        // Fill Request Model
-                        request.Terminal = _terminalId;
-                        request.Channel = _channle;
-                        request.NumberOfItemLines = numberOfItemLines;
-                        request.NumberOfItems = numberOfItems;
-                        request.NumberOfPaymentLines = noOfPaymentLine;
-                        request.ReciptId = _receiptId;
-                        request.SuspendedTransactionID = _suspendedId;
-                        request.TransactionId = _transactionId;
-                        request.Type = type;
-                        request.BatchTerminalId = _terminalId;
-                        request.CraeteDonPOSTerminal = _terminalId;
+                            // Fill Request Model
+                            request.Terminal = _terminalId;
+                            //request.Terminal = string.IsNullOrEmpty(request.Terminal) ? _terminalId : request.Terminal;
+                            request.Channel = _channle;
+                            request.NumberOfItemLines = numberOfItemLines;
+                            request.NumberOfItems = numberOfItems;
+                            request.NumberOfPaymentLines = noOfPaymentLine;
+                            request.ReciptId = _receiptId;
+                            request.SuspendedTransactionID = _suspendedId;
+                            request.TransactionId = _transactionId;
+                            request.Type = type;
+                            request.BatchTerminalId = _terminalId;
+                            request.CraeteDonPOSTerminal = _terminalId;
 
 
-                        DataTable responseDataTable = new DataTable();
+                            DataTable responseDataTable = new DataTable();
 
-                        //string parsedQuery = TemplateHelper.ParseQueryTemplate(query.ToString(), parameters);
-                        try
-                        {
-                            affectedRows = SqlHelper.ExecuteNonQuery(_connectionString_KFC, query.ToString(), CommandType.StoredProcedure, parameters);
-
-                            if (affectedRows > 0)
+                            //string parsedQuery = TemplateHelper.ParseQueryTemplate(query.ToString(), parameters);
+                            try
                             {
-                                ResponseModelWithClass<DataTable> dataTableLines = CreateretailTransSalesTransLines(request);
+                                affectedRows = SqlHelper.ExecuteNonQuery(_connectionString_RSSU, query.ToString(), CommandType.StoredProcedure, parameters);
 
-                                if (dataTableLines != null && dataTableLines.HttpStatusCode == (int)HttpStatusCode.OK)
+                                if (affectedRows > 0)
                                 {
-                                    if (request.Payment_method == PaymentMethod.CreditCard)
+
+                                    ResponseModelWithClass<DataTable> dataTableLines = CreateretailTransSalesTransLines(request);
+
+                                    if (dataTableLines != null && dataTableLines.HttpStatusCode == (int)HttpStatusCode.OK)
                                     {
-                                        affectedRowCreateRETAILTRANSACTIONPAYMENTTRANS = CreateRETAILTRANSACTIONPAYMENTTRANS(request);
-
-                                        if (affectedRowCreateRETAILTRANSACTIONPAYMENTTRANS > 0)
+                                        if (request.Payment_method == PaymentMethod.CreditCard || request.Payment_method == PaymentMethod.Cash)
                                         {
-                                            affectedRowInsertRetailTransactionTaxTrans = CreateRetailTransactionTaxTrans(request);
-                                        }
-                                        else
-                                        {
-
-                                        }
-                                    }
-
-                                    affectedRowInsertCrtSALESTRANSACTION = InsertCrtSALESTRANSACTION(request);
-
-                                    if (affectedRowInsertCrtSALESTRANSACTION <= 0)
-                                    {
-                                        isDeleted = DeleteCurrentRecord(_receiptId);
-                                        response.Result = responseModel = null;
-                                        response.Message = "No record created no data inserted in crt.RetailTransactionView";
-                                        response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
-                                        response.MessageType = (int)MessageType.Error;
-                                        return response;
-                                    }
-
-                                    affectedRowinsertInMCSDONUMBERTABLE = insertInMCSDONUMBERTABLE(request);
-
-                                    if (affectedRowinsertInMCSDONUMBERTABLE >= 1)
-
-                                    {
-                                        try
-                                        {
-                                            if (_isTaxImplemented == "1")
+                                            if (request.DiscAmount > 0 && request.DiscAmountWithoutTax > 0)
                                             {
-                                                fBRResponse = FBR(request);
-                                                responseModel.FBRInvoiceNo = fBRResponse.Result.InvoiceNumber;
-
-                                                _fbrInvoiceNumber = responseModel.FBRInvoiceNo;
-
-                                                if (_fbrInvoiceNumber != string.Empty)
-                                                {
-                                                    int affectedRowMZNFBRInvoicing = InsertMZNFBRInvoicing(request, _fbrInvoiceNumber);
-
-                                                    if (affectedRowMZNFBRInvoicing <= 0)
-                                                    {
-                                                        isDeleted = DeleteCurrentRecord(_receiptId);
-
-                                                        if (isDeleted)
-                                                        {
-                                                            response.Result = responseModel = null;
-                                                            response.Message = "No record created FBRInvoicing Log Not Created";
-                                                            response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
-                                                            response.MessageType = (int)MessageType.Error;
-                                                            return response;
-                                                        }
-                                                    }
-                                                }
-
-                                            }
-                                            else if (_isTaxImplemented == "2")
-                                            {
-                                                fBRResponse = FBR_TestURL(request);
-                                                responseModel.FBRInvoiceNo = fBRResponse.Result.InvoiceNumber;
-                                                _fbrInvoiceNumber = responseModel.FBRInvoiceNo;
-
-                                            }
-                                            else if (_isTaxImplemented == "3")
-                                            {
-                                                _srbInvoiceNumber = SRB(request);
-                                                if (_srbInvoiceNumber == "invalid Username or password SRB")
+                                                int insertedInDiscTrans = CreateRetailTransactionDiscountTrans(request);
+                                                if (insertedInDiscTrans <= 0)
                                                 {
                                                     isDeleted = DeleteCurrentRecord(_receiptId);
 
+                                                    //InsertRequestLog(request, "RetailTransactionDiscountTrans Issue occured" + " | " + request.ThirdPartyOrderId, false);
+
                                                     if (isDeleted)
                                                     {
-                                                        response.Result = responseModel = null;
-                                                        response.Message = "invalid Username or password SRB! No record created ";
+                                                        //response.Result = responseModel = null;
+                                                        response.Message = "No record created RetailTransactionDiscountTrans Error";
                                                         response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
                                                         response.MessageType = (int)MessageType.Error;
                                                         return response;
                                                     }
                                                 }
-                                                responseModel.FBRInvoiceNo = "SRBInvoiceNo: " + _srbInvoiceNumber;
-                                                _fbrInvoiceNumber = responseModel.FBRInvoiceNo;
+                                            }
+                                            if (request.NumberOfPaymentLines != null && request.NumberOfPaymentLines > 1 && request.paymentLines?.Count > 1)
+                                            {
+                                                affectedRowCreateRETAILTRANSACTIONPAYMENTTRANS = CreateMULTIRETAILTRANSACTIONPAYMENTTRANS(request);
+                                            }
+                                            else
+                                            {
+                                                affectedRowCreateRETAILTRANSACTIONPAYMENTTRANS = CreateRETAILTRANSACTIONPAYMENTTRANS(request);
+                                            }
 
-                                                if (_fbrInvoiceNumber != string.Empty)
+                                            if (affectedRowCreateRETAILTRANSACTIONPAYMENTTRANS > 0)
+                                            {
+                                                affectedRowInsertRetailTransactionTaxTrans = CreateRetailTransactionTaxTrans(request);
+                                            }
+                                            else
+                                            {
+                                                //isDeleted = DeleteCurrentRecord(_receiptId);
+                                            }
+                                        }
+
+                                        affectedRowInsertCrtSALESTRANSACTION = InsertCrtSALESTRANSACTION(request);
+
+                                        if (affectedRowInsertCrtSALESTRANSACTION <= 0)
+                                        {
+
+                                            isDeleted = DeleteCurrentRecord(_receiptId);
+
+                                            InsertSimplexRequestLog(request, "No record created in crt.RetailTransactionView" + " | " + request.ThirdPartyOrderId);
+
+                                            response.Result = responseModel = null;
+                                            response.Message = "No record created no data inserted in crt.RetailTransactionView";
+                                            response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                                            response.MessageType = (int)MessageType.Error;
+                                            return response;
+                                        }
+
+                                        affectedRowinsertInMCSDONUMBERTABLE = insertInMCSDONUMBERTABLE(request);
+
+                                        if (affectedRowinsertInMCSDONUMBERTABLE >= 1)
+
+                                        {
+                                            try
+                                            {
+                                                if (_isTaxImplemented == "1")
                                                 {
-                                                    int affectedRowMZNFBRInvoicingSRB = InsertMZNFBRInvoicing(request, _fbrInvoiceNumber);
+                                                    fBRResponse = FBR(request);
+                                                    responseModel.FBRInvoiceNo = fBRResponse.Result.InvoiceNumber;
 
-                                                    //insert value in RetailTransactionMarkupTrans in case of SRB only
+                                                    _fbrInvoiceNumber = responseModel.FBRInvoiceNo;
 
-                                                    affectedRowMarkupTrans = InsertRetaailTransactionMarkupTrans(request);
+                                                    if (_fbrInvoiceNumber != string.Empty)
+                                                    {
+                                                        int affectedRowMZNFBRInvoicing = InsertMZNFBRInvoicing(request, _fbrInvoiceNumber);
 
-                                                    if (affectedRowMZNFBRInvoicingSRB <= 0 || affectedRowMarkupTrans <= 0)
+                                                        if (affectedRowMZNFBRInvoicing <= 0)
+                                                        {
+                                                            isDeleted = DeleteCurrentRecord(_receiptId);
+
+                                                            InsertSimplexRequestLog(request, "FBR/SRB Log not created" + " | " + request.ThirdPartyOrderId);
+
+                                                            if (isDeleted)
+                                                            {
+                                                                response.Result = responseModel = null;
+                                                                response.Message = "No record created FBRInvoicing Log Not Created";
+                                                                response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                                                                response.MessageType = (int)MessageType.Error;
+                                                                return response;
+                                                            }
+                                                        }
+                                                    }
+
+                                                }
+                                                else if (_isTaxImplemented == "2")
+                                                {
+                                                    fBRResponse = FBR_TestURL(request);
+                                                    responseModel.FBRInvoiceNo = fBRResponse.Result.InvoiceNumber;
+                                                    _fbrInvoiceNumber = responseModel.FBRInvoiceNo;
+
+
+                                                    // only for testing purpose
+                                                    if (_fbrInvoiceNumber != string.Empty)
+                                                    {
+                                                        int affectedRowMZNFBRInvoicing = InsertMZNFBRInvoicing(request, _fbrInvoiceNumber);
+
+                                                        if (affectedRowMZNFBRInvoicing <= 0)
+                                                        {
+                                                            isDeleted = DeleteCurrentRecord(_receiptId);
+
+                                                            InsertSimplexRequestLog(request, "FBR/SRB Log not created" + " | " + request.ThirdPartyOrderId);
+
+                                                            if (isDeleted)
+                                                            {
+                                                                response.Result = responseModel = null;
+                                                                response.Message = "No record created FBRInvoicing Log Not Created";
+                                                                response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                                                                response.MessageType = (int)MessageType.Error;
+                                                                return response;
+                                                            }
+                                                        }
+                                                    }
+
+                                                }
+                                                else if (_isTaxImplemented == "3")
+                                                {
+                                                    _srbInvoiceNumber = SRB(request);
+                                                    if (_srbInvoiceNumber == "invalid Username or password SRB")
                                                     {
                                                         isDeleted = DeleteCurrentRecord(_receiptId);
+
+                                                        InsertSimplexRequestLog(request, "invalid Username or password SRB" + " | " + request.ThirdPartyOrderId);
 
                                                         if (isDeleted)
                                                         {
                                                             response.Result = responseModel = null;
-                                                            response.Message = "No record created SRBInvoicing Log Not Created";
+                                                            response.Message = "invalid Username or password SRB! No record created ";
                                                             response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
                                                             response.MessageType = (int)MessageType.Error;
                                                             return response;
                                                         }
                                                     }
+                                                    responseModel.FBRInvoiceNo = "SRBInvoiceNo: " + _srbInvoiceNumber;
+                                                    _fbrInvoiceNumber = responseModel.FBRInvoiceNo;
+
+                                                    if (_fbrInvoiceNumber != string.Empty)
+                                                    {
+                                                        int affectedRowMZNFBRInvoicingSRB = InsertMZNFBRInvoicing(request, _fbrInvoiceNumber);
+
+                                                        //insert value in RetailTransactionMarkupTrans in case of SRB only
+
+                                                        affectedRowMarkupTrans = InsertRetaailTransactionMarkupTrans(request);
+
+                                                        if (affectedRowMZNFBRInvoicingSRB <= 0 || affectedRowMarkupTrans <= 0)
+                                                        {
+                                                            isDeleted = DeleteCurrentRecord(_receiptId);
+
+                                                            InsertSimplexRequestLog(request, "SRB Issue occured" + " | " + request.ThirdPartyOrderId);
+
+                                                            if (isDeleted)
+                                                            {
+                                                                response.Result = responseModel = null;
+                                                                response.Message = "No record created SRBInvoicing Log Not Created";
+                                                                response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                                                                response.MessageType = (int)MessageType.Error;
+                                                                return response;
+                                                            }
+                                                        }
+                                                    }
                                                 }
+                                                else if (_isTaxImplemented == "0")
+                                                {
+                                                    responseModel.FBRInvoiceNo = "No FBR/PRA implemented";
+                                                }
+
+                                                //InsertSimplexRequestLog(request, "RecordCreated! " + " | " + request.ThirdPartyOrderId);
+                                                MarkOrderPaid(request.ThirdPartyOrderId);
+
+                                                // CashOut Api For ServerApp
+                                                //CashOutAPIForServerAsync(request.ThirdPartyOrderId);
+
+                                                //int insertIntoKDS = InsertKDSOrders(request);
+
+                                                response.MessageType = (int)MessageType.Success;
+                                                response.Message = "Success";
+                                                response.HttpStatusCode = (int)HttpStatusCode.OK;
+                                                responseModel.ReceiptId = _receiptId;
+                                                response.Result = responseModel;
                                             }
-                                            else if (_isTaxImplemented == "0")
+                                            catch (Exception ex)
                                             {
-                                                responseModel.FBRInvoiceNo = "No FBR/SBR implemented";
+                                                isDeleted = DeleteCurrentRecord(_receiptId);
+
+                                                if (isDeleted)
+                                                {
+                                                    InsertSimplexRequestLog(request, ex.Message + " | " + request.ThirdPartyOrderId);
+
+                                                    response.Result = responseModel = null;
+                                                    response.Message = "No record created" + ex.Message;
+                                                    response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                                                    response.MessageType = (int)MessageType.Error;
+                                                    return response;
+                                                }
+                                                else
+                                                {
+                                                    //response.Message = ex.Message;
+                                                }
+
+                                                throw;
                                             }
-                                            response.MessageType = (int)MessageType.Success;
-                                            response.Message = "Success";
-                                            response.HttpStatusCode = (int)HttpStatusCode.OK;
-                                            responseModel.RecipteId = _receiptId;
-                                            response.Result = responseModel;
                                         }
-                                        catch (Exception ex)
+                                        else
                                         {
                                             isDeleted = DeleteCurrentRecord(_receiptId);
 
+
+
                                             if (isDeleted)
                                             {
-                                                response.Result = responseModel = null;
-                                                response.Message = "No record created" + ex.Message;
-                                                response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
-                                                response.MessageType = (int)MessageType.Error;
-                                                return response;
+                                                response.Message = " No record created. ";
                                             }
                                             else
                                             {
                                                 //response.Message = ex.Message;
                                             }
-
-                                            throw;
+                                            response.Result = responseModel = null;
+                                            response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                                            response.MessageType = (int)MessageType.Error;
+                                            return response;
                                         }
-                                    }
-                                    else
-                                    {
-                                        isDeleted = DeleteCurrentRecord(_receiptId);
-
-                                        if (isDeleted)
-                                        {
-                                            response.Message = " No record created. ";
-                                        }
-                                        else
-                                        {
-                                            //response.Message = ex.Message;
-                                        }
-                                        response.Result = responseModel = null;
-                                        response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
-                                        response.MessageType = (int)MessageType.Error;
-                                        return response;
                                     }
                                 }
                             }
+                            catch (Exception ex)
+                            {
+                                //Delete all insertion against recipt id.
+                                isDeleted = DeleteCurrentRecord(_receiptId);
+
+                                InsertSimplexRequestLog(request, ex.Message + " | " + request.ThirdPartyOrderId);
+
+
+                                if (isDeleted)
+                                {
+                                    response.Message = " No record created. " + ex.Message;
+                                }
+                                else
+                                {
+                                    response.Message = ex.Message;
+                                }
+                                response.Result = responseModel = null;
+                                response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                                response.MessageType = (int)MessageType.Error;
+                                return response;
+
+                            }
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            //Delete all insertion against recipt id.
-                            isDeleted = DeleteCurrentRecord(_receiptId);
-
-                            if (isDeleted)
-                            {
-                                response.Message = " No record created. " + ex.Message;
-                            }
-                            else
-                            {
-                                response.Message = ex.Message;
-                            }
-                            response.Result = responseModel = null;
-                            response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
-                            response.MessageType = (int)MessageType.Error;
-                            return response;
-
+                            response.Result = null;
+                            response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
+                            response.MessageType = (int)MessageType.Warning;
                         }
                     }
                     else
                     {
                         response.Result = null;
                         response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
-                        response.MessageType = (int)MessageType.Warning;
+                        response.MessageType = (int)MessageType.Error;
+                        response.Message = "Tender Type incorrect, please finalize again with correct tendertype";
                     }
-                }
+                //}
 
-                else
-                {
-                    response.Result = null;
-                    response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
-                    response.MessageType = (int)MessageType.Error;
-                    response.Message = "Payment method not correct";
-                }
+                //else
+                //{
+                //    response.Result = null;
+                //    response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
+                //    response.MessageType = (int)MessageType.Error;
+                //    response.Message = "Payment method not correct";
+                //}
 
             }
             catch (Exception ex)
             {
+                int inserted = InsertSimplexRequestLog(request, ex.Message + " | " + request.ThirdPartyOrderId);
+                string catchMsg = string.Empty;
+                if (inserted > 0)
+                {
+                    catchMsg = ex.Message + " | " + ex.InnerException.Message;
+                }
                 response.Result = null;
                 response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
-                response.MessageType = (int)MessageType.Warning;
-                response.Message = ex.Message + "    " + ex.InnerException;
+                response.MessageType = (int)MessageType.Error;
+                response.Message = ex.Message + catchMsg + ex.InnerException;
                 //throw ex.InnerException;
             }
 
 
 
+            return response;
+        }
+
+        public async Task<ResponseModelWithClass<CustomCreateOrderResponse>> ReturnPOSOrder(KIOS.Integration.Application.Commands.ReturnPOSOrderCommand request)
+        {
+            ResponseModelWithClass<CustomCreateOrderResponse> response = new ResponseModelWithClass<CustomCreateOrderResponse>();
+            response.Result = null;
+            response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+            response.MessageType = (int)MessageType.Error;
+            response.Message = "Order Already Created";
             return response;
         }
 
@@ -933,7 +1124,7 @@ namespace KIOS.Integration.Application.Services
             return lastRecordResponse;
         }
 
-        private InlineQueryResponse getTaxGroupandBusinessDate(string storeId, PaymentMethod paymentMethod)
+        private InlineQueryResponse getTaxGroupandBusinessDate_bkup(string storeId, PaymentMethod paymentMethod)
         {
             DataSet ds = null;
             DataTable table = new DataTable();
@@ -1004,6 +1195,78 @@ namespace KIOS.Integration.Application.Services
             return inlineQueryResponse;
         }
 
+        private InlineQueryResponse getTaxGroupandBusinessDate(string storeId, PaymentMethod paymentMethod, string taxCode = "PRA-GST-16")
+        {
+            DataSet ds = null;
+            DataTable table = new DataTable();
+            string businessTime = string.Empty;
+            DateTime bdate = DateTime.Now;
+            string businessDate = "";
+            int paymentType = -0;
+
+
+            if (paymentMethod == PaymentMethod.CreditCard)
+            {
+                paymentType = 1;
+            }
+            if (paymentMethod == PaymentMethod.Cash)
+            {
+                paymentType = 0;
+            }
+
+            InlineQueryResponse inlineQueryResponse = new InlineQueryResponse();
+            StringBuilder queryAppend = new StringBuilder();
+
+            queryAppend.Append("usp_getTaxGroupAndBusinessDate");
+
+            Dictionary<string, object> parameters = new Dictionary<string, object>();
+
+            parameters.Add("storeId", storeId);
+            parameters.Add("payment_method", paymentType);
+            parameters.Add("taxcode", taxCode);
+
+            ds = SqlHelper.ExecuteDataSet(_connectionString_RSSU, queryAppend.ToString(), CommandType.StoredProcedure, parameters);
+
+            if (ds != null && ds.Tables[0].Rows.Count > 0)
+            {
+                table = ds.Tables[0];
+
+                if (table.Rows.Count > 0)
+                {
+                    inlineQueryResponse.SourceTaxGroup = table.Rows[0]["SOURCETAXGROUP"].ToString();
+                    inlineQueryResponse.TAXCODE = table.Rows[0]["TAXCODE"].ToString();
+                    inlineQueryResponse.TAXVALUE = Convert.ToDecimal(table.Rows[0]["TAXVALUE"]);
+                    _taxValue = Convert.ToDecimal(table.Rows[0]["TAXVALUE"]);
+                    inlineQueryResponse.TAXGROUP = table.Rows[0]["TAXGROUP"].ToString();
+                    inlineQueryResponse.stmtCalcBatchEndTime = table.Rows[0]["stmtCalcBatchEndTime"].ToString();
+
+                    businessTime = inlineQueryResponse.stmtCalcBatchEndTime;
+
+
+                    TimeSpan time = TimeSpan.FromSeconds(double.Parse(businessTime));
+                    TimeSpan businessTimeConverted = TimeSpan.Parse(time.ToString(@"hh\:mm\:ss"));
+
+
+                    //DateTime dateTime = Convert.ToDateTime(bdate);
+                    DateTime dateTime = DateTime.Now;
+
+                    if (dateTime.TimeOfDay > businessTimeConverted)
+                    {
+                        string bddatetime = dateTime.Year + "-" + dateTime.Month + "-" + dateTime.Day;
+                        businessDate = bddatetime;
+                        inlineQueryResponse.BusinessDate = businessDate;
+                    }
+                    else
+                    {
+                        DateTime newDate = dateTime.AddDays(-1);
+                        businessDate = newDate.Year + "-" + newDate.Month + "-" + newDate.Day;
+                        inlineQueryResponse.BusinessDate = businessDate;
+                    }
+                }
+            }
+
+            return inlineQueryResponse;
+        }
         private string IncrementedId(string storeId, bool isSuspended, bool isTransactionId)
         {
             string returnId = string.Empty;
@@ -1527,6 +1790,68 @@ namespace KIOS.Integration.Application.Services
             return affectedRows;
         }
 
+        private int CreateRetailTransactionTaxTrans_bkup(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request, int TaxExemptionBit)
+        {
+            ResponseModelWithClass<DataTable> response = new ResponseModelWithClass<DataTable>();
+            response.HttpStatusCode = (int)HttpStatusCode.Accepted;
+            response.MessageType = (int)MessageType.Info;
+            int affectedRows = 0;
+
+            InlineQueryResponse inlineQueryResponseTax = new InlineQueryResponse();
+
+            inlineQueryResponseTax = getTaxGroupandBusinessDate(request.Store, request.Payment_method, request.TaxGroup);
+
+            int lastCounterNo = GetREPLICATIONCOUNTERFROMORIGIN(request.Store);
+
+
+            lastCounterNo = lastCounterNo + 1;
+            string storeProcedureNamr = "usp_insert_RETAILTRANSACTIONTAXTRANS";
+
+
+            if (request != null && request.salesLines.Count > 0)
+            {
+                StringBuilder query = new StringBuilder();
+                query.Append(storeProcedureNamr);
+
+
+                if (request != null && request.salesLines.Count > 0)
+                {
+                    foreach (var item in request.salesLines)
+                    {
+                        Dictionary<string, object> parameters = new Dictionary<string, object>
+                         {
+                             { "AMOUNT", item.TaxAmount },
+                             { "CHANNEL", _channle },
+                             { "ISINCLUDEDINPRICE", TaxExemptionBit },
+                           //{ "REPLICATIONCOUNTERFROMORIGIN", lastCounterNo },
+                             { "SALELINENUM", item.LineNum },
+                             { "STOREID", request.Store },
+                             { "TAXCODE", inlineQueryResponseTax.TAXCODE},
+                             { "TERMINALID", _terminalId },
+                             { "TRANSACTIONID", _transactionId },
+                             { "TAXBASEAMOUNT", item.NETAMOUNT },
+                             { "TAXPERCENTAGE", inlineQueryResponseTax.TAXVALUE},
+                             { "ISEXEMPT", 0.00},
+                             { "DATAAREAID", request.Company}
+                          };
+
+                        affectedRows = SqlHelper.ExecuteNonQuery(_connectionString_RSSU, storeProcedureNamr, CommandType.StoredProcedure, parameters);
+
+                    }
+
+                }
+            }
+            else
+            {
+                response.Result = null;
+                response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
+                response.MessageType = (int)MessageType.Warning;
+                affectedRows = -2;
+            }
+
+            return affectedRows;
+        }
+
         private int GetREPLICATIONCOUNTERFROMORIGIN(string storeId)
         {
             int lasrREPLICATIONCOUNTERFROMORIGIN = 0;
@@ -1961,11 +2286,6 @@ namespace KIOS.Integration.Application.Services
             return mZNPOSTERMINALINFOResponse;
         }
 
-        public Task<ResponseModelWithClass<CreateSalesOrderResponse>> CreateOrderKFCA(CreateRetailTransactionCommand request)
-        {
-            throw new NotImplementedException();
-        }
-
         private int InsertRetaailTransactionMarkupTrans(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request)
         {
             int affectedRows = 0;
@@ -1988,5 +2308,651 @@ namespace KIOS.Integration.Application.Services
 
             return affectedRows;
         }
+
+        private int InsertSimplexRequestLog(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request, string msg)
+        {
+            int affectedRows = 0;
+
+            string requestedJson = JsonConvert.SerializeObject(request);
+
+            string InsertSimplexRequestLogQuery = "usp_SimplexRequestLog";
+
+            Dictionary<string, object> parameters = new Dictionary<string, object>
+              {
+                  { "json", requestedJson },
+                  { "ThirdPartyOrderId", request.ThirdPartyOrderId},
+                  { "storeid", request.Store },
+                  { "TerminalId", _terminalId },
+                  { "ReceiptId", _receiptId },
+                  { "Message", msg },
+                  { "createdOn", DateTime.Now }
+
+              };
+
+            affectedRows = SqlHelper.ExecuteNonQuery(_connectionString_RSSU, InsertSimplexRequestLogQuery, CommandType.StoredProcedure, parameters);
+
+            //}
+
+            return affectedRows;
+        }
+
+       
+        private async Task SaveRetailTransactionAsync(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request, CustomCreateOrderResponse responseModel, bool isUpdate = false)
+        {
+            var jsonRequest = JsonConvert.SerializeObject(request);
+            var storedProcedure = "dbo.InsertMiddlewareRetailTransaction";
+            bool isFinalize = true;
+            bool isFinalizeUpdate = false;
+            bool isDeleted = false;
+            bool isPaid = false;
+            bool isOrderLock = false;
+            if (request.orderStatus == "Created")
+            {
+                isFinalize = false;
+            }
+
+            try
+            {
+                using (var connection = new SqlConnection(_connectionString_CHZ_MIDDLEWARE))
+                {
+                    await connection.OpenAsync();
+
+                    if (request.orderStatus != "Created")
+                    {
+                        LockOrder(request.ThirdPartyOrderId);
+                        await FinalizeUpdate(request.ThirdPartyOrderId);
+                    }
+                    var transactionid = "";
+                    if (isUpdate)
+                    {
+                        transactionid = request.TransactionId;
+                    }
+                    else
+                    {
+                        transactionid = GenerateTransactionId();
+                    }
+                    using (var command = new SqlCommand(storedProcedure, connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        // Add parameters for the stored procedure from the request object
+                        command.Parameters.AddWithValue("@DataAreaId", request.Company);
+                        command.Parameters.AddWithValue("@Currency", request.Currency);
+                        command.Parameters.AddWithValue("@GrossAmount", request.GrossAmount);
+                        command.Parameters.AddWithValue("@NetAmount", request.NetAmount);
+                        command.Parameters.AddWithValue("@NetPrice", request.NetPrice);
+                        command.Parameters.AddWithValue("@TransDate", request.TransDate);
+                        command.Parameters.AddWithValue("@PaymentMode", request.PaymentMode ?? 1);
+                        command.Parameters.AddWithValue("@Store", request.Store ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@TenderTypeId", request.TenderTypeId ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@AmountCur", request.AmountCur ?? request.GrossAmount);
+                        command.Parameters.AddWithValue("@ThirdPartyOrderId", request.ThirdPartyOrderId ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@DiscAmount", (object)request.DiscAmount ?? DBNull.Value);
+                        command.Parameters.AddWithValue("@DiscAmountWithoutTax", (object)request.DiscAmountWithoutTax ?? DBNull.Value);
+                        command.Parameters.AddWithValue("@Floor", request.Floor ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@Table", request.Table ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@Server", request.Server ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@Person", request.Person);
+                        command.Parameters.AddWithValue("@Comment", request.Comment ?? "");
+                        command.Parameters.AddWithValue("@Json", jsonRequest ?? (object)DBNull.Value);
+                        command.Parameters.AddWithValue("@isFinalize", isFinalize);
+                        command.Parameters.AddWithValue("@isDeleted", isDeleted);
+                        command.Parameters.AddWithValue("@isPaid", isPaid);
+                        command.Parameters.AddWithValue("@isOrderLock", isOrderLock);
+                        command.Parameters.AddWithValue("@TaxGroup", request?.TaxGroup ?? "PRA-GST- 5");
+                        command.Parameters.AddWithValue("@IsFinalizeUpdate", isFinalizeUpdate);
+                        command.Parameters.AddWithValue("@DiscountOfferId", request.DiscountOfferId ?? "CHZ-00001");
+                        command.Parameters.AddWithValue("@CreatedOn", DateTime.Now);
+
+                        // Add the TransactionId as input parameter
+                        command.Parameters.AddWithValue("@TransactionId", transactionid); // Use the generated TransactionId
+
+                        // Execute the stored procedure
+                        await command.ExecuteNonQueryAsync();
+
+                        // Set the ReceiptId (or use it as needed in your response model)
+                        responseModel.ReceiptId = transactionid; // Store the output TransactionId in your response model
+                    }
+
+                    DateTime tdate = DateTime.Now;
+                    // Insert sales lines
+                    foreach (var item in request.salesLines)
+                    {
+                        var itemName = ItemName(item.ItemId);
+
+                        var salesTrans = new KIOS.Integration.Application.Commands.CreateRetailTransactionSalesTransCommand
+                        {
+                            TransactionId = transactionid,
+                            ItemId = item.ItemId,
+                            ItemName = itemName,
+                            Linenum = (decimal)item.LineNum,
+                            Quantity = (decimal)item.Qty,
+                            TaxAmount = (decimal)item.TaxAmount,
+                            NetAmount = (decimal)item.NETAMOUNT,
+                            NetAmountInclTax = (decimal)item.NETAMOUNTINCLTAX,
+                            TransdDate = tdate,
+                            Store = request.Store,
+                            Price = (decimal)item.Price,
+                            LineComment = item.LineComment,
+                            DiscAmount = (decimal)item.DiscAmount,
+                            DiscAmountWithOutTax = (decimal)item.DiscAmountWithOutTax,
+                            LastTransactionId = transactionid
+                        };
+
+                        // Call the function to insert the sales line
+                        await InsertRetailTransactionSalesTransAsync(salesTrans, connection);
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions, for example, log them
+                Console.WriteLine($"Error: {ex.Message}");
+                throw;
+            }
+        }
+        private async Task InsertRetailTransactionSalesTransAsync(KIOS.Integration.Application.Commands.CreateRetailTransactionSalesTransCommand salesTrans, SqlConnection connection)
+        {
+            using (var command = new SqlCommand("InsertRetailTransactionSalesTrans", connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+
+                // Add parameters
+                command.Parameters.AddWithValue("@TransactionId", salesTrans.TransactionId);
+                command.Parameters.AddWithValue("@ItemId", salesTrans.ItemId ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@ItemName", salesTrans.ItemName ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@LineNum", salesTrans.Linenum);
+                command.Parameters.AddWithValue("@Quantity", salesTrans.Quantity);
+                command.Parameters.AddWithValue("@TaxAmount", salesTrans.TaxAmount);
+                command.Parameters.AddWithValue("@NetAmount", salesTrans.NetAmount);
+                command.Parameters.AddWithValue("@NetAmountInclTax", salesTrans.NetAmountInclTax);
+                command.Parameters.AddWithValue("@TransdDate", salesTrans.TransdDate);
+                command.Parameters.AddWithValue("@Store", salesTrans.Store ?? (object)DBNull.Value);
+                command.Parameters.AddWithValue("@Price", salesTrans.Price);
+                command.Parameters.AddWithValue("@NetPrice", salesTrans.NetPrice);
+                command.Parameters.AddWithValue("@LineComment", salesTrans.LineComment);
+                command.Parameters.AddWithValue("@DiscAmount", salesTrans.DiscAmount);
+                command.Parameters.AddWithValue("@DiscAmountWithOutTax", salesTrans.DiscAmountWithOutTax);
+                command.Parameters.AddWithValue("@LastTransactionId", salesTrans.LastTransactionId);
+
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+        public string GenerateTransactionId()
+        {
+            // Get the current DateTime in the format "yyyyMMddHHmmssfff"
+            string dateTimePart = DateTime.Now.ToString("yyyyMMddHHmmssfff");
+
+            // Generate a random 3-digit number (from 000 to 999)
+            Random random = new Random();
+            string randomPart = random.Next(0, 1000).ToString("D3"); // Ensure it's always 3 digits (e.g., 005, 123)
+
+            // Combine the DateTime and random parts to form the TransactionId
+            string transactionId = dateTimePart + randomPart;
+
+            return transactionId;
+        }
+        private string ItemName(string itemId)
+        {
+            string itemName = string.Empty;
+            string dataAreaId = "CHZ";
+
+            string qry = "select ax.ECORESPRODUCTTRANSLATION.DESCRIPTION from ax.INVENTTABLE " +
+                        "Join ax.ECORESPRODUCTTRANSLATION On ax.ECORESPRODUCTTRANSLATION.PRODUCT = ax.INVENTTABLE.PRODUCT Where ITEMID ='" + itemId + "' And DATAAREAID = '" + dataAreaId + "' And LANGUAGEID='en-us'";
+
+            DataSet dataSet = SqlHelper.ExecuteDataSet(_connectionString_RSSU, qry, CommandType.Text);
+
+            if (dataSet.Tables != null && dataSet.Tables != null && dataSet.Tables.Count > 0)
+            {
+                DataTable dataTable = dataSet.Tables[0];
+                if (dataTable.Rows.Count > 0)
+                {
+                    //Hard Code
+                    itemName = dataTable.Rows[0]["Description"].ToString();
+                }
+            }
+
+            return itemName;
+        }
+        public bool CreatedRecord(string thirdPartyOrderId, string orderStatus)
+        {
+            bool isFinalize = orderStatus != "Created";
+            Dictionary<string, object> parameters = new Dictionary<string, object>(); // Initialize the dictionary
+            bool isPaid = true;
+            string getCreatedOrderQuery = string.Empty; // Initialize query string
+
+            // Define query based on orderStatus
+            if (orderStatus == "Created")
+            {
+                getCreatedOrderQuery = "SELECT COUNT(*) AS RecordCount FROM dbo.RETAILTRANSACTION WHERE thirdPartyOrderId = @thirdPartyOrderId AND isFinalize = @isFinalize";
+
+                // Parameters for the query
+                parameters.Add("@thirdPartyOrderId", thirdPartyOrderId);
+                parameters.Add("@isFinalize", isFinalize ? 1 : 0);
+            }
+            else if (orderStatus == "Finalized")
+            {
+                getCreatedOrderQuery = "SELECT COUNT(*) AS RecordCount FROM dbo.RETAILTRANSACTION WHERE thirdPartyOrderId = @thirdPartyOrderId AND isFinalize = @isFinalize AND isPaid = @isPaid";
+
+                // Parameters for the query
+                parameters.Add("@thirdPartyOrderId", thirdPartyOrderId);
+                parameters.Add("@isFinalize", isFinalize ? 1 : 0);
+                parameters.Add("@isPaid", isPaid ? 1 : 0);
+            }
+
+            // Execute the query to check for existing record
+            DataSet dataSet = SqlHelper.ExecuteDataSet(_connectionString_CHZ_MIDDLEWARE, getCreatedOrderQuery, CommandType.Text, parameters);
+
+            // Check if the dataset contains results
+            if (dataSet != null && dataSet.Tables.Count > 0 && dataSet.Tables[0].Rows.Count > 0)
+            {
+                // Retrieve the count from the first row and column
+                int count = Convert.ToInt32(dataSet.Tables[0].Rows[0]["RecordCount"]);
+                return count > 0; // Return true if there is at least one record
+            }
+
+            return false; // Return false if no records found
+        }
+
+
+        public bool VerifyRecord(string thirdPartyOrderId, string orderStatus)
+        {
+            bool isFinalize = orderStatus != "Created";
+
+            // Query to fetch the count
+            string getCreatedOrderQuery = "SELECT COUNT(*) AS RecordCount FROM dbo.RETAILTRANSACTION WHERE thirdPartyOrderId = @thirdPartyOrderId AND isFinalize = @isFinalize";
+
+            // Parameters for the query
+            var parameters = new Dictionary<string, object>
+                {
+                    { "@thirdPartyOrderId", thirdPartyOrderId },
+                    { "@isFinalize", isFinalize ? 1 : 0 }
+                };
+
+            // Use ExecuteDataSet to execute the query
+            DataSet dataSet = SqlHelper.ExecuteDataSet(_connectionString_CHZ_MIDDLEWARE, getCreatedOrderQuery, CommandType.Text, parameters);
+
+            // Check if the dataset contains results
+            if (dataSet != null && dataSet.Tables.Count > 0 && dataSet.Tables[0].Rows.Count > 0)
+            {
+                // Retrieve the count from the first row and column
+                int count = Convert.ToInt32(dataSet.Tables[0].Rows[0]["RecordCount"]);
+                return count > 0;
+            }
+
+            return false;
+        }
+        public bool DeleteTransaction(string thirdPartyOrderId)
+        {
+            // Query to update the isDelete flag
+            string updateQuery = @"
+            UPDATE dbo.RETAILTRANSACTION
+            SET isDeleted = 1
+            WHERE thirdPartyOrderId = @thirdPartyOrderId
+            AND isFinalize != 1";
+
+            // Parameters for the query
+            var parameters = new Dictionary<string, object>
+            {
+            { "@thirdPartyOrderId", thirdPartyOrderId }
+            };
+
+            try
+            {
+                // Execute the update query
+                int rowsAffected = SqlHelper.ExecuteNonQuery(_connectionString_CHZ_MIDDLEWARE, updateQuery, CommandType.Text, parameters);
+
+                // Return true if at least one row was updated
+                return rowsAffected > 0;
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (you can replace this with your logging framework)
+                Console.WriteLine("Error in DeleteTransaction: " + ex.Message);
+                return false;
+            }
+
+        }
+
+        private int MarkOrderPaid(string thirdPartyOrderId)
+        {
+            int affectedRows = 0;
+            string updateQuery = "UPDATE dbo.retailtransaction " +
+                                             "SET isPaid = 1 " +
+                                             "WHERE thirdPartyOrderId = @ThirdPartyOrderId ";
+
+            // Set parameters for the update query
+            var updateParameters = new Dictionary<string, object>
+                        {
+                            { "@ThirdPartyOrderId", thirdPartyOrderId }
+                        };
+
+            // Execute the update query
+            SqlHelper.ExecuteNonQuery(_connectionString_CHZ_MIDDLEWARE, updateQuery, CommandType.Text, updateParameters);
+
+            return affectedRows;
+        }
+
+        private int LockOrder(string thirdPartyOrderId)
+        {
+            int affectedRows = 0;
+            string updateQuery = "UPDATE dbo.retailtransaction " +
+                                             "SET isOrderLock = 1 " +
+                                             "WHERE thirdPartyOrderId = @ThirdPartyOrderId  AND isFinalize != 1";
+
+            // Set parameters for the update query
+            var updateParameters = new Dictionary<string, object>
+                        {
+                            { "@ThirdPartyOrderId", thirdPartyOrderId }
+                        };
+
+            // Execute the update query
+            SqlHelper.ExecuteNonQuery(_connectionString_CHZ_MIDDLEWARE, updateQuery, CommandType.Text, updateParameters);
+
+            return affectedRows;
+        }
+
+        private async Task<int> FinalizeUpdate(string thirdPartyOrderId)
+        {
+            int affectedRows = 0;
+            string updateQuery = "UPDATE dbo.retailtransaction " +
+                                             "SET isFinalizeUpdate = 1 " +
+                                             "WHERE thirdPartyOrderId = @ThirdPartyOrderId  AND isFinalize = 1";
+
+            // Set parameters for the update query
+            var updateParameters = new Dictionary<string, object>
+                        {
+                            { "@ThirdPartyOrderId", thirdPartyOrderId }
+                        };
+
+            // Execute the update query
+            SqlHelper.ExecuteNonQuery(_connectionString_CHZ_MIDDLEWARE, updateQuery, CommandType.Text, updateParameters);
+
+            return affectedRows;
+        }
+        private int CreateRetailTransactionDiscountTrans(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request)
+        {
+            ResponseModelWithClass<DataTable> response = new ResponseModelWithClass<DataTable>();
+            response.HttpStatusCode = (int)HttpStatusCode.Accepted;
+            response.MessageType = (int)MessageType.Info;
+            int affectedRows = 0;
+
+
+
+            string storeProcedureNamr = "usp_CreateRetailTransactionDiscTrans";
+
+
+            if (request != null && request.salesLines.Count > 0)
+            {
+                StringBuilder query = new StringBuilder();
+                query.Append(storeProcedureNamr);
+
+
+                if (request != null && request.salesLines.Count > 0)
+                {
+                    foreach (var item in request.salesLines)
+                    {
+                        if (item.DiscAmount > 0 && item.DiscAmountWithOutTax > 0)
+                        {
+                            Dictionary<string, object> parameters = new Dictionary<string, object>
+                         {
+                             { "AMOUNT", item.DiscAmount },
+                             { "CHANNEL", _channle },
+                             { "DISCOUNTCOST", item.DiscAmountWithOutTax },
+                             { "DISCOUNTORIGINTYPE", 2 },
+                           //{ "REPLICATIONCOUNTERFROMORIGIN", lastCounterNo },
+                             { "LINENUM", item.LineNum },
+                             { "PERCENTAGE", 0 },
+                             { "PERIODICDISCOUNTOFFERID", request.DiscountOfferId},
+                             { "SALELINENUM",  item.LineNum },
+                             { "STOREID", request.Store },
+                             { "TERMINALID", _terminalId },
+                             { "TRANSACTIONID", _transactionId},
+                             { "DATAAREAID", request.Company}
+                          };
+
+                            affectedRows = SqlHelper.ExecuteNonQuery(_connectionString_RSSU, storeProcedureNamr, CommandType.StoredProcedure, parameters);
+                        }
+                    }
+
+                }
+            }
+            else
+            {
+                response.Result = null;
+                response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
+                response.MessageType = (int)MessageType.Warning;
+                affectedRows = -2;
+            }
+
+            return affectedRows;
+        }
+
+        private int GetTaxExemptionBit(string storeId)
+        {
+            int TaxExemptionBit = 0;
+
+            string query = "SELECT PRICEINCLUDESSALESTAX FROM ax.RETAILCHANNELTABLE " +
+                           "WHERE INVENTLOCATION = '" + storeId + "'";
+
+            DataSet dataSet = SqlHelper.ExecuteDataSet(_connectionString_RSSU, query, CommandType.Text, null);
+
+            if (dataSet != null && dataSet.Tables[0].Rows.Count > 0)
+            {
+                DataTable dataTable = dataSet.Tables[0];
+
+                // Correctly retrieve the bit value as a boolean using GetBoolean()
+                TaxExemptionBit = Convert.ToInt32(dataTable.Rows[0]["PRICEINCLUDESSALESTAX"]);
+            }
+
+            return TaxExemptionBit;
+        }
+
+        private string GetTenderTypeIdByThirdPartyOrderId(string thirdPartyOrderid)
+        {
+            string TenderTypeId = null;
+
+            string query = "SELECT TenderTypeId FROM dbo.retailtransaction " +
+                           "WHERE thirdPartyOrderId = '" + thirdPartyOrderid + "' AND isFinalize = 1 AND isOrderLock != 1";
+
+            DataSet dataSet = SqlHelper.ExecuteDataSet(_connectionString_RSSU, query, CommandType.Text, null);
+
+            if (dataSet != null && dataSet.Tables[0].Rows.Count > 0)
+            {
+                DataTable dataTable = dataSet.Tables[0];
+
+                // Correctly retrieve the bit value as a boolean using GetBoolean()
+                TenderTypeId = Convert.ToString(dataTable.Rows[0]["TenderTypeId"]);
+            }
+
+            return TenderTypeId;
+        }
+
+        private string GetTaxGroupByThirdPartyOrderId(string thirdPartyOrderid)
+        {
+            string TaxGroup = null;
+
+            string query = "SELECT TaxGroup FROM dbo.retailtransaction " +
+                           "WHERE thirdPartyOrderId = '" + thirdPartyOrderid + "' AND isFinalize = 1 AND isOrderLock != 1";
+
+            DataSet dataSet = SqlHelper.ExecuteDataSet(_connectionString_RSSU, query, CommandType.Text, null);
+
+            if (dataSet != null && dataSet.Tables[0].Rows.Count > 0)
+            {
+                DataTable dataTable = dataSet.Tables[0];
+
+                // Correctly retrieve the bit value as a boolean using GetBoolean()
+                TaxGroup = Convert.ToString(dataTable.Rows[0]["TaxGroup"]);
+            }
+
+            return TaxGroup;
+        }
+
+       
+       
+        private int CreateMULTIRETAILTRANSACTIONPAYMENTTRANS(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request)
+        {
+            ResponseModelWithClass<DataTable> response = new ResponseModelWithClass<DataTable>();
+            response.HttpStatusCode = (int)HttpStatusCode.Accepted;
+            response.MessageType = (int)MessageType.Info;
+            int affectedRows = 0;
+            string batchId = string.Empty;
+            DateTime now = DateTime.Now;
+            string date_now = now.Year + "-" + now.Month + "-" + now.Day;
+            double seconds = TimeSpan.Parse(now.ToString("HH:mm:ss")).TotalSeconds;
+            int payLineNum = 0;
+            int refundPayLineNum = 0;
+
+            foreach (var paymentLine in request.paymentLines)
+            {
+
+                String paymentTransQuery = "INSERT INTO ax.RETAILTRANSACTIONPAYMENTTRANS(TERMINAL,CHANNEL,RECEIPTID," +
+                    "STORE,TRANSACTIONID,TenderType,Staff,QTY,AmountCur,AmountMst,AmountTendered,Currency," +
+                    "ExchRate,ExchRateMst,TransDate,TransTime,DataAreaId,BusinessDate,ISPAYMENTCAPTURED,REFUNDABLEAMOUNT, LINENUM ) " +
+                                                         "VALUES (@TERMINAL,@CHANNEL,@RECEIPTID,@STORE,@TRANSACTIONID," +
+                                                         "@TenderType,@Staff, @QTY,@AmountCur,@AmountMst," +
+                                                         "@AmountTendered,@Currency,@ExchRate,@ExchRateMst,@TransDate," +
+                                                         "@TransTime,@DataAreaId,@BusinessDate,@ISPAYMENTCAPTURED,@REFUNDABLEAMOUNT, @LINENUM )";
+
+                if (request != null && request.salesLines.Count > 0)
+                {
+                    double totalseconds = TimeSpan.Parse(now.ToString("HH:mm:ss")).TotalSeconds;
+                    int transTime = Convert.ToInt32(totalseconds);
+
+
+                    if (paymentLine.TenderTypeId != "" || paymentLine.TenderTypeId != null)
+                    {
+                        if (paymentLine.TenderTypeId == "20" || paymentLine.TenderTypeId == "1")
+                        {
+                            request.PaymentMode = 1;
+                        }
+                        else if (paymentLine.TenderTypeId == "10" || paymentLine.TenderTypeId == "14" || paymentLine.TenderTypeId == "31" || paymentLine.TenderTypeId == "32" ||
+                            paymentLine.TenderTypeId == "33" || paymentLine.TenderTypeId == "34")
+                        {
+                            request.PaymentMode = 6;
+                        }
+
+                        else if (paymentLine.TenderTypeId == "17" || paymentLine.TenderTypeId == "21")
+                        {
+                            request.PaymentMode = 3;
+                        }
+                    }
+
+                    StringBuilder query = new StringBuilder();
+
+                    //query.Append("SELECT EMP_NAME, EMP_NAME FROM hr_sm_emply WHERE emp_code = @Code");
+                    query.Append(paymentTransQuery);
+
+                    decimal? refundableAmount = 0;
+
+                    //refundableAmount = request.AmountCur - _totalBillAmount;
+
+                    if (refundableAmount > 0)
+                    {
+                        Dictionary<string, object> parameters = new Dictionary<string, object>
+                         {
+                             { "TERMINAL", _terminalId },
+                             { "CHANNEL", _channle },
+                             { "RECEIPTID", _receiptId },
+                             { "STORE", request.Store },
+                             { "TRANSACTIONID", _transactionId },
+                             { "TenderType", paymentLine.TenderTypeId },
+                             { "Staff", _staffId  },
+                             { "QTY", 1.00},
+                             { "AmountCur", paymentLine.AmountCur},
+                             { "AmountMst", paymentLine.AmountCur},
+                             { "AmountTendered", paymentLine.AmountCur},
+                             { "Currency", request.Currency},
+                             { "ExchRate", 100},
+                             { "ExchRatemst", 100},
+                             { "TRANSDATE", request.TransDate},
+                             //{ "TRANSTIME", request.TransTime},
+                             { "TRANSTIME", transTime},
+                             { "DataAreaId", request.Company},
+                             { "BusinessDate", request.TransDate},
+                             { "ISPAYMENTCAPTURED", 1},
+                             { "REFUNDABLEAMOUNT", paymentLine.GrossAmount },
+                             { "LINENUM", refundPayLineNum+=1 }
+                          };
+
+                        affectedRows = SqlHelper.ExecuteNonQuery(_connectionString_RSSU, paymentTransQuery, CommandType.Text, parameters);
+
+                        Dictionary<string, object> parametersSecondLine = new Dictionary<string, object>
+                         {
+                             { "TERMINAL", _terminalId },
+                             { "CHANNEL", _channle },
+                             { "RECEIPTID", _receiptId },
+                             { "STORE", request.Store },
+                             { "TRANSACTIONID", _transactionId },
+                             { "TenderType", paymentLine.TenderTypeId },
+                             { "Staff", _staffId },
+                             { "QTY", 1.00},
+                             { "AmountCur", refundableAmount * -1},
+                             { "AmountMst", refundableAmount * -1},
+                             { "AmountTendered", refundableAmount * -1},
+                             { "Currency", request.Currency},
+                             { "ExchRate", 100},
+                             { "ExchRatemst", 100},
+                             { "TRANSDATE", request.TransDate},
+                             //{ "TRANSTIME", request.TransTime},
+                             { "TRANSTIME", transTime},
+                             { "DataAreaId", request.Company},
+                             { "BusinessDate", request.TransDate},
+                             { "ISPAYMENTCAPTURED", 1},
+                             { "REFUNDABLEAMOUNT", 0 },
+                             { "LINENUM", refundPayLineNum +=1 }
+                          };
+
+                        affectedRows = SqlHelper.ExecuteNonQuery(_connectionString_RSSU, paymentTransQuery, CommandType.Text, parametersSecondLine);
+                        refundPayLineNum = 1;
+                    }
+                    else
+                    {
+
+                        Dictionary<string, object> parametersSecondLine = new Dictionary<string, object>
+                         {
+                             { "TERMINAL", _terminalId },
+                             { "CHANNEL", _channle },
+                             { "RECEIPTID", _receiptId },
+                             { "STORE", request.Store },
+                             { "TRANSACTIONID", _transactionId },
+                             { "TenderType", paymentLine.TenderTypeId },
+                             { "Staff", _staffId  },
+
+                             { "QTY", 1.00},
+                             { "AmountCur", paymentLine.AmountCur},
+                             { "AmountMst", paymentLine.AmountCur},
+                             { "AmountTendered", paymentLine.AmountCur},
+                             { "Currency", request.Currency},
+                             { "ExchRate", 100},
+                             { "ExchRatemst", 100},
+                             { "TRANSDATE", request.TransDate},
+                             //{ "TRANSTIME", request.TransTime},
+                             { "TRANSTIME", transTime},
+                             { "DataAreaId", request.Company},
+                             { "BusinessDate", request.TransDate},
+                             { "ISPAYMENTCAPTURED", 1},
+                             { "REFUNDABLEAMOUNT", paymentLine.GrossAmount },
+                             { "LINENUM", payLineNum+=1 }
+                          };
+
+                        affectedRows = SqlHelper.ExecuteNonQuery(_connectionString_RSSU, paymentTransQuery, CommandType.Text, parametersSecondLine);
+                    }
+
+
+
+                }
+                else
+                {
+                    response.Result = null;
+                    response.HttpStatusCode = (int)HttpStatusCode.BadRequest;
+                    response.MessageType = (int)MessageType.Warning;
+                    affectedRows = -2;
+                }
+            }
+            return affectedRows;
+        }
+
     }
 }

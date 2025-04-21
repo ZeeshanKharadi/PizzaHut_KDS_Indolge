@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using CHZ.Integration.Application.Commands;
+using MediatR;
 using POS_Integration_CommonCore.Enums;
 using POS_IntegrationCommonDTO.Request;
 using POS_IntegrationCommonInfrastructure.Model;
@@ -8,6 +9,7 @@ namespace KIOS.Integration.Application.Commands
 
     public class CreateRetailTransactionCommand : IRequest<RetailTransaction>
     {
+
         public string Id { get; set; }
         public string Company { get; set; }
         public string Terminal { get; set; }
@@ -60,12 +62,24 @@ namespace KIOS.Integration.Application.Commands
         public int? PaymentMode { get; set; }
         public string BusinessDateCustom { get; set; }
         public string TableNum { get; set; }
+        public string Comment { get; set; }
+        public double DiscAmount { get; set; }
+        public double DiscAmountWithoutTax { get; set; }
+        public string Floor { get; set; }
+        public string Table { get; set; }
+        public string Server { get; set; }
+        public int Person { get; set; }
+        public string orderStatus { get; set; }
+        public string TaxGroup { get; set; }
+        public string? DiscountOfferId { get; set; }
 
         public IList<SalesLine> salesLines { get; set; }
-
+        public IList<PaymentLinesCustom> paymentLines { get; set; }
         public CreateRetailTransactionCommand()
         {
             salesLines = new List<SalesLine>();
+            paymentLines = new List<PaymentLinesCustom>();
         }
+
     }
 }

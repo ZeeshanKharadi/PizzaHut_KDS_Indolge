@@ -1,5 +1,6 @@
 ﻿using KIOS.Integration.Web.Model;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using System.Data;
 using System.Net;
 
@@ -9,10 +10,13 @@ namespace KIOS.Integration.Web.Services
     {
         private readonly IConfiguration Iconfig;
         private string cs;
+        private string _connectionString_RSSU;
 
         public IndolgeOrdersToKDS(IConfiguration iconfig)
         {
             Iconfig = iconfig;
+            _connectionString_RSSU = iconfig.GetConnectionString("RSSUConnection");
+
         }
 
         public async Task<ResponseModelWithClass> InsertIndolgeOrdersToKDS(OrderHeader _request)
@@ -87,6 +91,7 @@ namespace KIOS.Integration.Web.Services
             string OrderState = "Preparing";
             string OrderStatusId = "1";
             string OrderSource = "KDS Orders";
+            
 
 
             //string OrderTypeId = "03";
@@ -101,6 +106,17 @@ namespace KIOS.Integration.Web.Services
                 int affectedRow = 0;
                 foreach (var row in salesLines)
                 {
+                    string stationName = GetStationNameFromItemId(_connectionString_RSSU, row.itemId);
+                    string stationId = "";
+
+                    if (stationName == "Pizza")
+                    {
+                        stationId = "1";
+                    }
+                    else if (stationName == "Appetizer")
+                    {
+                        stationId = "2";
+                    }
                     LineNum++;
                     string InsertIntoOrders =
                             @"Insert Into Orders (OrderId,
@@ -166,8 +182,10 @@ namespace KIOS.Integration.Web.Services
                     InsertIntoLineCmd.Parameters.AddWithValue("@ItemCategory", "");
                     InsertIntoLineCmd.Parameters.AddWithValue("@TransactionType", transactiontype);
                     InsertIntoLineCmd.Parameters.AddWithValue("@StationId", row.stationId?? "1");
-                    InsertIntoLineCmd.Parameters.AddWithValue("@StationName", row.stationName?? "");
-                    InsertIntoLineCmd.Parameters.AddWithValue("@Size", row.stationName?? "");
+                    //InsertIntoLineCmd.Parameters.AddWithValue("@StationId", row.stationId?? stationId);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@StationName", row.stationName?? "Pizza");
+                    //InsertIntoLineCmd.Parameters.AddWithValue("@StationName", row.stationName?? stationName);
+                    InsertIntoLineCmd.Parameters.AddWithValue("@Size", row.size?? "");
 
                     con.Open();
                     affectedRow = InsertIntoLineCmd.ExecuteNonQuery();
@@ -526,5 +544,28 @@ namespace KIOS.Integration.Web.Services
                 return OrderType;
             }
         }
+        private string GetStationNameFromItemId(string _connectionString, string itemId)
+        {
+            // repetitive data :/
+            using (SqlConnection con = new SqlConnection(_connectionString))
+            {
+                string StationName = "";
+                DataRow dr;
+                string Get_OrderType = "SELECT ITEMID,CASE WHEN PizzaStation = 1 THEN 'Pizza' WHEN PastaStation = 1 THEN 'Pasta Station' ELSE 'Unknown' END AS AssignedStation FROM ax.retailinventtable WHERE ITEMID = '" + itemId + "'";
+                SqlDataAdapter _sqldataadapter = new SqlDataAdapter(Get_OrderType, con);
+                _sqldataadapter.SelectCommand.CommandType = System.Data.CommandType.Text;
+                DataTable datatabe = new DataTable();
+                _sqldataadapter.Fill(datatabe);
+                if (datatabe.Rows.Count > 0)
+                {
+                    dr = datatabe.Rows[0];
+                    StationName = dr["AssignedStation"].ToString();
+                }
+                return StationName;
+            }
+        }
+
+
+
     }
 }

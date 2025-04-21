@@ -1,7 +1,13 @@
-﻿using KIOS.Integration.Web.Model;
+﻿using KIOS.Integration.Application.Commands;
+using KIOS.Integration.Application.Services;
+using KIOS.Integration.Application.Services.Abstraction;
+using KIOS.Integration.Web.Model;
 using KIOS.Integration.Web.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using POS_Integration_CommonCore.Enums;
+using POS_Integration_CommonCore.Response;
+using System.Net;
 
 namespace KIOS.Integration.Web.Controllers
 {
@@ -11,9 +17,13 @@ namespace KIOS.Integration.Web.Controllers
     {
         private readonly IConfiguration Iconfig;
         private string cs;
-        public orderKDSController(IConfiguration iconfig)
+        private readonly ILogger<orderKDSController> _logger;
+        private readonly ICreateOrderService _createOrderService;
+        public orderKDSController(IConfiguration iconfig, ILogger<orderKDSController> logger, ICreateOrderService createOrderService)
         {
             Iconfig = iconfig;
+            _createOrderService = createOrderService;
+            _logger = logger;
         }
 
         [HttpPost]
@@ -48,7 +58,7 @@ namespace KIOS.Integration.Web.Controllers
         }
 
         [HttpDelete]
-        [Route("DeleteKDSOrder")]
+        [Route("cancelKDSOrder")]
         public async Task<ResponseModelWithClass> Delete(string OrderId)
         {
             ResponseModelWithClass res = new ResponseModelWithClass();
@@ -59,5 +69,26 @@ namespace KIOS.Integration.Web.Controllers
 
             return response;
         }
+
+        //[HttpPost]
+        //[Route("complete-order")]
+        //public async Task<ResponseModelWithClass<CustomCreateOrderResponse>> CompleteOrderCHZ(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request)
+        //{
+        //    ResponseModelWithClass<CustomCreateOrderResponse> response = new ResponseModelWithClass<CustomCreateOrderResponse>();
+
+        //    try
+        //    {
+        //        return await _createOrderService.CreateOrderCHZ(request);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        response.Result = null;
+        //        response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+        //        response.MessageType = (int)MessageType.Error;
+        //        response.Message = "server error msg: " + ex.Message + " | Inner exception:  " + ex.InnerException;
+        //        return response;
+        //    }
+        //}
+
     }
 }
