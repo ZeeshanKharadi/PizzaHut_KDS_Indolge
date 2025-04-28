@@ -7,6 +7,6 @@ namespace KIOS.Integration.Application.Services.Abstraction
     public interface ICreateOrderService
     {
         Task<ResponseModelWithClass<CustomCreateOrderResponse>> CreateOrderCHZ(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request);
-        Task<ResponseModelWithClass<CustomCreateOrderResponse>> ReturnPOSOrder(KIOS.Integration.Application.Commands.ReturnPOSOrderCommand request);
+        Task<ResponseModelWithClass<CustomCreateOrderResponse>> ReturnPOSOrder(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request);
      }
 }

@@ -112,13 +112,13 @@
     "ContainingType": "KIOS.Integration.Web.Controllers.OrderPOS",
     "Method": "ReturnPOSOrder",
     "RelativePath": "api/OrderPOS/return-order",
-    "HttpMethod": "DELETE",
+    "HttpMethod": "POST",
     "IsController": true,
     "Order": 0,
     "Parameters": [
       {
         "Name": "request",
-        "Type": "KIOS.Integration.Application.Commands.ReturnPOSOrderCommand",
+        "Type": "KIOS.Integration.Application.Commands.CreateRetailTransactionCommand",
         "IsRequired": true
       }
     ],

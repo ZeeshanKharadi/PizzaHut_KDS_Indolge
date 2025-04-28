@@ -49,9 +49,9 @@ namespace KIOS.Integration.Web.Controllers
         }
 
 
-        [HttpDelete]
+        [HttpPost]
         [Route("return-order")]
-        public async Task<ResponseModelWithClass<CustomCreateOrderResponse>> ReturnPOSOrder(KIOS.Integration.Application.Commands.ReturnPOSOrderCommand request)
+        public async Task<ResponseModelWithClass<CustomCreateOrderResponse>> ReturnPOSOrder(KIOS.Integration.Application.Commands.CreateRetailTransactionCommand request)
         {
             ResponseModelWithClass<CustomCreateOrderResponse> response = new ResponseModelWithClass<CustomCreateOrderResponse>();
 
