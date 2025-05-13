@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using POS_IntegrationCommonInfrastructure.Database;
+using KIOS.Integration.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -52,6 +53,7 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICreateOrderService, CreateOrderService>();
 builder.Services.AddScoped<ICreateCashOrderService, CreateCashOrderService>();
 builder.Services.AddScoped<ICheckPosStatusService, CheckPosStatusService>();
+builder.Services.AddScoped<ICreateOrderDTService, CreateOrderDTService>();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {

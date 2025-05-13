@@ -1,13 +1,15 @@
 ﻿using KIOS.Integration.Application.Commands;
 using KIOS.Integration.Application.Services;
+using KIOS.Integration.Web.Services;
 using KIOS.Integration.Application.Services.Abstraction;
 using KIOS.Integration.Web.Model;
-using KIOS.Integration.Web.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using POS_Integration_CommonCore.Enums;
 using POS_Integration_CommonCore.Response;
+using POS_IntegrationCommonDTO.Response;
 using System.Net;
+using CreateOrderResponse = KIOS.Integration.Web.Model.CreateOrderResponse;
 
 namespace KIOS.Integration.Web.Controllers
 {
@@ -19,11 +21,13 @@ namespace KIOS.Integration.Web.Controllers
         private string cs;
         private readonly ILogger<orderKDSController> _logger;
         private readonly ICreateOrderService _createOrderService;
-        public orderKDSController(IConfiguration iconfig, ILogger<orderKDSController> logger, ICreateOrderService createOrderService)
+        private readonly ICreateOrderDTService _createOrderDTService;
+        public orderKDSController(IConfiguration iconfig, ILogger<orderKDSController> logger, ICreateOrderService createOrderService, ICreateOrderDTService createOrderDTService)
         {
             Iconfig = iconfig;
             _createOrderService = createOrderService;
             _logger = logger;
+            _createOrderDTService = createOrderDTService;
         }
 
         [HttpPost]
@@ -68,6 +72,49 @@ namespace KIOS.Integration.Web.Controllers
             ResponseModelWithClass response = await obj.DeleteOrderFromKDS(cs,OrderId);
 
             return response;
+        }
+
+        [HttpPost]
+        [Route("createOrderForDragonTail")]
+        public async Task<CreateOrderResponse> CreateOrder(CreateOrderModel request)
+        {
+            CreateOrderResponse response = new CreateOrderResponse();
+
+            try
+            {
+                return await _createOrderDTService.CreateOrder(request);
+            }
+            catch (Exception ex)
+            {
+                response.Result = null;
+                // response.HttpStatusCode = (int)HttpStatusCode.InternalServerError;
+                response.HttpStatusCode = 0;
+                //response.MessageType = (int)MessageType.Error;
+                response.MessageType = 0;
+                response.Message = "server error msg: " + ex.Message + " | Inner exception:  " + ex.InnerException;
+                return response;
+            }
+        }
+
+        [HttpPut]
+        [Route("updateOrder")]
+        public async Task<CreateOrderResponse> UpdateOrder(string thirdPartyOrderId, [FromBody] UpdateOrderModel request)
+        {
+            CreateOrderResponse response = new CreateOrderResponse();
+
+            try
+            {
+
+                return await _createOrderPOSService.UpdateOrder(request, thirdPartyOrderId);
+            }
+            catch (Exception ex)
+            {
+                response.Result = null;
+                response.HttpStatusCode = 0; // Consider using actual status codes
+                response.MessageType = 0;
+                response.Message = $"server error msg: {ex.Message} | Inner exception: {ex.InnerException}";
+                return response;
+            }
         }
 
         //[HttpPost]
