@@ -7,9 +7,9 @@ using System.Text;
 using System.Threading.Tasks;
 using CreateOrderResponse = KIOS.Integration.Web.Model.CreateOrderResponse;
 
-namespace KIOS.Integration.Application.Services.Abstraction
+namespace KIOS.Integration.Web.Services.Interfaces
 {
-    internal interface ICreateOrderDTService
+    public interface ICreateOrderDTService
     {
         Task<CreateOrderResponse> CreateOrder(CreateOrderModel request);
         Task<CreateOrderResponse> UpdateOrder(UpdateOrderModel request, string thirdPartyOrderId);

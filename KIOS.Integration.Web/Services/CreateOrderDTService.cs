@@ -2,9 +2,14 @@
 using KIOS.Integration.Web.Helper;
 using KIOS.Integration.Web.Model;
 using KIOS.Integration.Web.Services;
+using KIOS.Integration.Web.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Data;
+using System.Net.Http;
+using System.Text;
 
 namespace KIOS.Integration.Web.Services
 {
@@ -40,7 +45,7 @@ namespace KIOS.Integration.Web.Services
         //private readonly ISender _mediator;
         private string _terminalIdOverride;
 
-        public CreateOrderPOSService(IConfiguration configuration)
+        public CreateOrderDTService(IConfiguration configuration)
         {
             _configuration = configuration;
             _connectionString_CHZ_MIDDLEWARE = configuration.GetConnectionString("AppDbConnection");
@@ -60,7 +65,7 @@ namespace KIOS.Integration.Web.Services
             {
                 // Insert into DynamicPosOrder Table
                 InsertDynamicPOSOrder(request);
-                string apiResult = await SendOrderToExternalApi(request);
+                string apiResult = await SendOrderToDragonTailCreateOrderApi(request);
                 response = JsonConvert.DeserializeObject<CreateOrderResponse>(apiResult);
                 return response;
             }
@@ -194,25 +199,18 @@ namespace KIOS.Integration.Web.Services
 
 
 
-        public async Task<string> SendOrderToExternalApi(CreateOrderModel request)
+        public async Task<string> SendOrderToDragonTailCreateOrderApi(CreateOrderModel request)
         {
-            var externalRequest = new CreateKDSOrderExt
+            var dtModel = MapToDTModel(request);
+            DragonTailCredentials DTCredentials =  await GetDragonTailCredentialsAsync(request.Store);
+            string token = await GetDragonTailTokenAsync(DTCredentials.LoginUrl, DTCredentials.UserId, DTCredentials.Password);
+            var headers = new Dictionary<string, string>
             {
-                thirdPartyOrderId = request.ThirdPartyOrderId,
-                storeid = request.Store,
-                salesLines = request.SalesLines.Select(line => new ExternalOrderLine
-                {
-                    itemId = line.ExtItemId,
-                    itemName = $"{line.Size} {line.Crust}".Trim(),
-                    quantity = line.Qty,
-                    description = line.LineComment ?? line.ExtItemId,
-                    storeId = request.Store,
-                    posId = "000012" // You can make this dynamic if needed
-                }).ToList()
+                { "token", token }
             };
-
             string apiUrl = "http://localhost:1638/api/OrderKDS/CreateKDSOrder";
-            return await ApiHelper.PostAsync(apiUrl, externalRequest);
+            return await ApiHelper.PostAsync(apiUrl, dtModel);
+
         }
         public async Task<string> SendSaleOrderToExternalApi(CreateOrderModel request)
         {
@@ -280,7 +278,115 @@ namespace KIOS.Integration.Web.Services
                 command.ExecuteNonQuery(); // Use ExecuteNonQuery for UPDATE
             }
         }
+        public async Task<string> GetDragonTailTokenAsync(string loginUrl, string username, string password)
+        {
+            var loginRequest = new DTLoginRequest
+            {
+                UserName = username,
+                Password = password,
+                UserLevel = -1
+            };
 
+            string response = await ApiHelper.PostAsync(loginUrl, loginRequest);
+
+            var loginResponse = JsonConvert.DeserializeObject<DTLoginResponse>(response);
+
+            if (loginResponse.Status.ToLower() != "ok")
+                throw new Exception("Login failed: " + response);
+
+            return loginResponse.Token;
+        }
+
+        public async Task<DragonTailCredentials> GetDragonTailCredentialsAsync(string storeId)
+        {
+           
+            const string query = @"
+        SELECT DTUserId, DTPassword, DTloginUrl 
+        FROM ax.RETAILSTORETABLE 
+        WHERE STORENUMBER = @STORENUMBER";
+
+            using (SqlConnection connection = new SqlConnection(_connectionString))
+            using (SqlCommand command = new SqlCommand(query, connection))
+            {
+                command.Parameters.Add(new SqlParameter("@STORENUMBER", SqlDbType.VarChar) { Value = storeId });
+
+                await connection.OpenAsync();
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    if (await reader.ReadAsync())
+                    {
+                        return new DragonTailCredentials
+                        {
+                            UserId = reader["DTUserId"]?.ToString(),
+                            Password = reader["DTPassword"]?.ToString(),
+                            LoginUrl = reader["DTloginUrl"]?.ToString()
+                        };
+                    }
+                    else
+                    {
+                        throw new Exception("No credentials found for the given store ID.");
+                    }
+                }
+            }
+        }
+
+
+        public DTCreateOrderModel MapToDTModel(CreateOrderModel request)
+        {
+            int generatedOrderId = new Random().Next(50000, 99999); // Use a proper ID strategy here
+
+            return new DTCreateOrderModel
+            {
+                time = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                storeNo = int.Parse(request.Store),
+                fullLoad = false,
+                AltOrderId = request.ThirdPartyOrderId,
+                orders = new List<DTOrder>
+        {
+            new DTOrder
+            {
+                orderId = generatedOrderId,
+                storeNo = int.Parse(request.Store),
+                clientId = request.clientId ?? 0,
+                lastName = request.lastName ?? "",
+                firstName = request.firstName,
+                city = request.city,
+                street = request.street ?? "",
+                addressNo = request.addressNo,
+                postCode = request.postCode ?? "",
+                secondaryAddress = request.secondaryAddress ?? "",
+                lat = request.lat,
+                lng = request.lng,
+                phone = request.phone ?? "",
+                orderTotal = request.NetAmount,
+                paymentMethod = request.TenderTypeId ?? "1",
+                cash = request.AmountCur,
+                orderTime = request.orderTime,
+                saleType = request.Type,
+                dailyNo = 1, // or generate dynamically
+                priority = 1,
+                carrierInstructions = request.carrierInstructions ?? "",
+                vipId = Guid.NewGuid().ToString()
+            }
+        },
+                orderItems = request.SalesLines.Select(line => new DTOrderItem
+                {
+                    orderId = generatedOrderId,
+                    storeNo = int.Parse(request.Store),
+                    kdsList = "Pizza-KDS", // or dynamic
+                    CutTableDineIn_KDS = null,
+                    CutTableDineIn_Printer = null,
+                    position = line.position,
+                    itemNo = line.ExtItemId,
+                    quantity = line.Qty,
+                    description = line.LineComment ?? line.ExtItemId,
+                    side = line.side,
+                    rightSideIcon = "default.jpg", // set dynamically if needed
+                    style = line.side == 0 ? "color: green;" : null
+                }).ToList()
+            };
+        }
 
     }
 }

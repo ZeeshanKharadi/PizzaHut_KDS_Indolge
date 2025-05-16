@@ -11,6 +11,8 @@ using POS_IntegrationCommonDTO.Response;
 using System.Net;
 using CreateOrderResponse = KIOS.Integration.Web.Model.CreateOrderResponse;
 
+using KIOS.Integration.Web.Services.Interfaces;
+
 namespace KIOS.Integration.Web.Controllers
 {
     [Route("api/[controller]")]
@@ -22,6 +24,7 @@ namespace KIOS.Integration.Web.Controllers
         private readonly ILogger<orderKDSController> _logger;
         private readonly ICreateOrderService _createOrderService;
         private readonly ICreateOrderDTService _createOrderDTService;
+        
         public orderKDSController(IConfiguration iconfig, ILogger<orderKDSController> logger, ICreateOrderService createOrderService, ICreateOrderDTService createOrderDTService)
         {
             Iconfig = iconfig;
@@ -105,7 +108,7 @@ namespace KIOS.Integration.Web.Controllers
             try
             {
 
-                return await _createOrderPOSService.UpdateOrder(request, thirdPartyOrderId);
+                return await _createOrderDTService.UpdateOrder(request, thirdPartyOrderId);
             }
             catch (Exception ex)
             {

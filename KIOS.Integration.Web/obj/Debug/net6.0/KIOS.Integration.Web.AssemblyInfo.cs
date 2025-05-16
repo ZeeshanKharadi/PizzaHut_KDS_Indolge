@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KIOS.Integration.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4fb64b23171b041bc7f610509ff53963ab691c7c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d080e305630a3c87cf61304c26f3a984abf1e3d1")]
 [assembly: System.Reflection.AssemblyProductAttribute("KIOS.Integration.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KIOS.Integration.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

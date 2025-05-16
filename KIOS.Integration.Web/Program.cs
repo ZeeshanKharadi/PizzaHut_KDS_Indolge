@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using POS_IntegrationCommonInfrastructure.Database;
 using KIOS.Integration.Web.Services;
+using KIOS.Integration.Web.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
