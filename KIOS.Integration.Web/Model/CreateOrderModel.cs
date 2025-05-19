@@ -28,7 +28,7 @@
         public int? Person { get; set; }
         public string TaxGroup { get; set; }
         public string? DiscountOfferId { get; set; }
-        public List<SalesLine> SalesLines { get; set; }
+        public List<SalesLineExt> SalesLines { get; set; }
         public string OrderSource { get; set; }
         public string? Company { get; set; }
         public string orderTime { get; set; }
@@ -51,7 +51,7 @@
         public bool? sendMessage { get; set; }
     }
 
-    public class SalesLine
+    public class SalesLineExt
     {
         public string ExtItemId { get; set; }
         public string? ItemId { get; set; }

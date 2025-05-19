@@ -53,6 +53,32 @@
   },
   {
     "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
+    "Method": "CreateOrder",
+    "RelativePath": "api/orderKDS/createOrderForDragonTail",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "KIOS.Integration.Web.Model.CreateOrderModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "KIOS.Integration.Web.Model.CreateOrderResponse",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
     "Method": "UpdateIndolgeOrders",
     "RelativePath": "api/orderKDS/UpdateKDSOrder",
     "HttpMethod": "PUT",
@@ -73,6 +99,37 @@
     "ReturnTypes": [
       {
         "Type": "KIOS.Integration.Web.Model.ResponseModelWithClass",
+        "MediaTypes": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "StatusCode": 200
+      }
+    ]
+  },
+  {
+    "ContainingType": "KIOS.Integration.Web.Controllers.orderKDSController",
+    "Method": "UpdateOrder",
+    "RelativePath": "api/orderKDS/updateOrder",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "thirdPartyOrderId",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "request",
+        "Type": "KIOS.Integration.Web.Model.UpdateOrderModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": [
+      {
+        "Type": "KIOS.Integration.Web.Model.CreateOrderResponse",
         "MediaTypes": [
           "text/plain",
           "application/json",
