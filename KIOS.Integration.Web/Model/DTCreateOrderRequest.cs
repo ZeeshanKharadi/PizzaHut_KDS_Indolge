@@ -26,7 +26,8 @@
         public decimal lng { get; set; }
         public string phone { get; set; }
         public decimal orderTotal { get; set; }
-        public string paymentMethod { get; set; }
+        public int paymentMethod { get; set; }
+        //public string paymentMethod { get; set; }
         public decimal cash { get; set; }
         public string orderTime { get; set; }
         public int saleType { get; set; }

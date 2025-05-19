@@ -13,42 +13,42 @@ using KIOS.Integration.Web.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
-
-var jwtIssuer = builder.Configuration.GetSection("Jwt:Issuer").Get<string>();
-var jwtKey = builder.Configuration.GetSection("Jwt:Key").Get<string>();
-
-//var provider = builder.Services.BuildServiceProvider();
-//var config = provider.GetRequiredService<IConfiguration>();
-
-
+// JWT Configuration
+var jwtIssuer = builder.Configuration["Jwt:Issuer"];
+var jwtKey = builder.Configuration["Jwt:Key"];
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
- .AddJwtBearer(options =>
- {
-     options.TokenValidationParameters = new TokenValidationParameters
-     {
-         ValidateIssuer = true,
-         ValidateAudience = true,
-         ValidateLifetime = true,
-         ValidateIssuerSigningKey = true,
-         ValidIssuer = jwtIssuer,
-         ValidAudience = jwtIssuer,
-         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-     };
- });
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtIssuer,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
 
-// Add services to the container.
-
+// Add Services
 builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
 
-//Add Mediatr
-//builder.Services.AddMediatR(Assembly.GetExecutingAssembly());
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+    {
+        Title = "Indolge Integration With KDS",
+        Version = "v1"
+    });
+});
+
+// Mediatr & App Services
+builder.Services.AddMediatR(typeof(GetAllUserTypeQueryHandler).Assembly);
 builder.Services.AddScoped<GetAllUserTypeQueryHandler>();
 builder.Services.AddScoped<CreateUserTypeCommand>();
-//builder.Services.AddScoped<IUserTypeRepository, UserTypeRepository>();
-//builder.Services.AddMediatR(typeof(UserTypeRepository).Assembly);
-
-builder.Services.AddMediatR(typeof(GetAllUserTypeQueryHandler).Assembly);
 
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICreateOrderService, CreateOrderService>();
@@ -56,49 +56,38 @@ builder.Services.AddScoped<ICreateCashOrderService, CreateCashOrderService>();
 builder.Services.AddScoped<ICheckPosStatusService, CheckPosStatusService>();
 builder.Services.AddScoped<ICreateOrderDTService, CreateOrderDTService>();
 
+// Database
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseSqlServer(builder.Configuration["ConnectionStrings:AppDbConnection"]);
     options.UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
 });
 
-builder.Services.AddSwaggerGen(opt => opt.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+// CORS
+builder.Services.AddCors(p => p.AddPolicy("corsapp", policyBuilder =>
 {
-    //Title = "Kababjees CallCenter Integration API V3",
-    Title = "Indolge Integration With KDS",
-
-   // Description = "PrintSaleOrder KOT d365 f&O Integration version 3.0"
-}));
-
-//builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
-
-//Allow cors origin
-builder.Services.AddCors(p => p.AddPolicy("corsapp", builder =>
-{
-    builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
+    policyBuilder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
 }));
 
 var app = builder.Build();
 
-
-// Configure the HTTP request pipeline.
+// Middleware pipeline
 if (app.Environment.IsDevelopment())
-//|| app.Environment.IsProduction())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Indolge Integration With KDS V1");
+        c.RoutePrefix = "swagger"; // Default is "swagger"
+    });
 }
 
-//app.UseSwagger();
-//app.UseSwaggerUI();
+app.UseCors("corsapp");
 
-//app.UseHttpsRedirection();
-
+// Optional: app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
 app.Run();

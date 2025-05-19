@@ -1,5 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System.Text;
+using System.Net.Http.Headers;
+
 
 namespace KIOS.Integration.Web.Helper
 {
@@ -12,7 +14,8 @@ namespace KIOS.Integration.Web.Helper
             try
             {
                 string jsonContent = JsonConvert.SerializeObject(requestBody);
-                var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+                var content = new StringContent(jsonContent, Encoding.UTF8);
+                content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
 
                 using var requestMessage = new HttpRequestMessage(HttpMethod.Post, url);
                 requestMessage.Content = content;
@@ -27,8 +30,6 @@ namespace KIOS.Integration.Web.Helper
                 }
 
                 HttpResponseMessage response = await _httpClient.SendAsync(requestMessage);
-                response.EnsureSuccessStatusCode();
-
                 string responseContent = await response.Content.ReadAsStringAsync();
                 return responseContent;
             }

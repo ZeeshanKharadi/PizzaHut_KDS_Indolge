@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("KIOS.Integration.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7952ad0bdd3094011aaa9eba9bdad4f72742cd0e")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+59ec691125ef41bf6a523f424e026a1c75e50551")]
 [assembly: System.Reflection.AssemblyProductAttribute("KIOS.Integration.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("KIOS.Integration.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

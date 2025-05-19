@@ -208,8 +208,8 @@ namespace KIOS.Integration.Web.Services
             {
                 { "token", token }
             };
-            string apiUrl = "http://localhost:1638/api/OrderKDS/CreateKDSOrder";
-            return await ApiHelper.PostAsync(apiUrl, dtModel);
+            string apiUrl = "http://127.0.0.1:8092/PosInsertOrders";
+            return await ApiHelper.PostAsync(apiUrl, dtModel, headers);
 
         }
         public async Task<string> SendSaleOrderToExternalApi(CreateOrderModel request)
@@ -302,7 +302,7 @@ namespace KIOS.Integration.Web.Services
            
             const string query = @"
         SELECT DTUserId, DTPassword, DTloginUrl 
-        FROM ax.RETAILSTORETABLE 
+        FROM ext.RETAILSTORETABLE 
         WHERE STORENUMBER = @STORENUMBER";
 
             using (SqlConnection connection = new SqlConnection(_connectionString))
@@ -360,10 +360,12 @@ namespace KIOS.Integration.Web.Services
                 lng = request.lng,
                 phone = request.phone ?? "",
                 orderTotal = request.NetAmount,
-                paymentMethod = request.TenderTypeId ?? "1",
+                //paymentMethod = request.TenderTypeId ?? "1",
+                paymentMethod = 1,
                 cash = request.AmountCur,
                 orderTime = request.orderTime,
-                saleType = request.Type,
+                saleType = 2,
+                //saleType = request.Type,
                 dailyNo = 1, // or generate dynamically
                 priority = 1,
                 carrierInstructions = request.carrierInstructions ?? "",
